@@ -49,17 +49,17 @@ public class ImapRepository implements RemoteNotesRepository {
 
     @Override
     public Collection<Note> getNotes() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Collection<Notebook> getNotebooks() {
         try {
             initCache();
             return Collections.unmodifiableCollection(cache.values());
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
-    }
-
-    @Override
-    public Collection<Notebook> getNotebooks() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
@@ -125,7 +125,8 @@ public class ImapRepository implements RemoteNotesRepository {
                 BodyPart bodyPart = content.getBodyPart(i);
                 if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
                     Note note = parser.parseNote(bodyPart.getInputStream());
-                    cache.put(note.getIdentification().getUid(), note);
+                    //TODO create note and add it into notebook
+//                    cache.put(note.getIdentification().getUid(), note);
                 }
             }
         }
