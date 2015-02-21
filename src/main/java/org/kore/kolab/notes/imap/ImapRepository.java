@@ -6,6 +6,7 @@
 package org.kore.kolab.notes.imap;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -30,13 +31,15 @@ import org.kore.kolab.notes.RemoteNotesRepository;
  */
 public class ImapRepository implements RemoteNotesRepository {
 
-    private final Map<String, Notebook> cache;
+    private final Map<String, Notebook> notebookCache;
+    private final Map<String, Note> notesCache;
     private final KolabNotesParser parser;
     private final AccountInformation account;
     private final String rootfolder;
 
     public ImapRepository(KolabNotesParser parser, AccountInformation account, String rootFolder) {
-        this.cache = new ConcurrentHashMap<String, Notebook>();
+        this.notebookCache = new ConcurrentHashMap<String, Notebook>();
+        this.notesCache = new ConcurrentHashMap<String, Note>();
         this.parser = parser;
         this.account = account;
         this.rootfolder = rootFolder;
@@ -44,27 +47,26 @@ public class ImapRepository implements RemoteNotesRepository {
 
     @Override
     public Note getNote(String id) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        initCache();
+        return notesCache.get(id);
     }
 
     @Override
     public Collection<Note> getNotes() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        initCache();
+        return Collections.unmodifiableCollection(notesCache.values());
     }
 
     @Override
     public Collection<Notebook> getNotebooks() {
-        try {
-            initCache();
-            return Collections.unmodifiableCollection(cache.values());
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
+        initCache();
+        return Collections.unmodifiableCollection(notebookCache.values());
     }
 
     @Override
     public Notebook getNotebook(String uid) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        initCache();
+        return notebookCache.get(uid);
     }
 
 
@@ -80,11 +82,29 @@ public class ImapRepository implements RemoteNotesRepository {
 
     @Override
     public void refresh() {
-        cache.clear();
+        notesCache.clear();
+        notebookCache.clear();
         try {
-            initCache();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
+            Properties props = new Properties();
+
+            Session session = Session.getInstance(props, null);
+
+            Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imaps");
+
+            store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+
+            Folder rFolder = store.getFolder(rootfolder);
+            initNotesFromFolder(rFolder);
+
+            Folder[] allFolders = rFolder.list("*");
+
+            for (Folder folder : allFolders) {
+                initNotesFromFolder(folder);
+            }
+
+            store.close();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -93,40 +113,31 @@ public class ImapRepository implements RemoteNotesRepository {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-
-    void initCache() throws Exception {
-        Properties props = new Properties();
-
-        Session session = Session.getInstance(props, null);
-
-        Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imaps");
-
-        store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
-
-        Folder rFolder = store.getFolder(rootfolder);
-        initNotesFromFolder(rFolder);
-
-        Folder[] allFolders = rFolder.list("*");
-
-        for (Folder folder : allFolders) {
-            initNotesFromFolder(folder);
+    void initCache(){
+        if (notesCache.isEmpty()) {
+            refresh();
         }
-
-        store.close();
     }
 
     void initNotesFromFolder(Folder folder) throws MessagingException, IOException {
         folder.open(Folder.READ_ONLY);
         Message[] messages = folder.getMessages();
 
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        Note.Identification id = new Note.Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
+        Note.AuditInformation audit = new Note.AuditInformation(now, now);
+
+        Notebook notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
+        notebookCache.put(notebook.getIdentification().getUid(), notebook);
+        
         for (Message m : messages) {
             Multipart content = (Multipart) m.getContent();
             for (int i = 0; i < content.getCount(); i++) {
                 BodyPart bodyPart = content.getBodyPart(i);
                 if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
                     Note note = parser.parseNote(bodyPart.getInputStream());
-                    //TODO create note and add it into notebook
-//                    cache.put(note.getIdentification().getUid(), note);
+                    notebook.add(note);
+                    notesCache.put(note.getIdentification().getUid(), note);
                 }
             }
         }
