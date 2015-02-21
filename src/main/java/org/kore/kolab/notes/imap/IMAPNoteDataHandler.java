@@ -14,36 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.kore.kolab.notes;
+package org.kore.kolab.notes.imap;
 
-import java.util.Collection;
+import javax.activation.DataHandler;
 
 /**
  *
  * @author Konrad Renner
  */
-public interface NotesRepository {
+public class IMAPNoteDataHandler extends DataHandler {
 
-    /**
-     * Gets a note with the given UID
-     *
-     * @param uid
-     * @return Note
-     */
-    Note getNote(String uid);
+    public IMAPNoteDataHandler(Object o, String string) {
+        super(o, string);
+    }
 
-    /**
-     * Gets all Notes from the repository
-     *
-     * @return Collection
-     */
-    Collection<Note> getNotes();
-
-    Collection<Notebook> getNotebooks();
-
-    Notebook getNotebook(String uid);
-
-    boolean deleteNotebook(String uid);
-
-    Notebook createNotebook(String uid, String summary);
 }

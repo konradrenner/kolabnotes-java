@@ -18,12 +18,13 @@ package org.kore.kolab.notes;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 /**
  * @author Konrad Renner
  * 
  */
-public interface KolabNotesParser {
+public interface KolabNotesParser extends Serializable {
 
     /**
      * Parses a note from an InputStream, this method will not close the

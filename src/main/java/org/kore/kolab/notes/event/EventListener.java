@@ -14,36 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.kore.kolab.notes;
-
-import java.util.Collection;
+package org.kore.kolab.notes.event;
 
 /**
  *
  * @author Konrad Renner
  */
-public interface NotesRepository {
+public interface EventListener {
 
-    /**
-     * Gets a note with the given UID
-     *
-     * @param uid
-     * @return Note
-     */
-    Note getNote(String uid);
+    void propertyChanged(String uid, Type type, String propertyName, Object oldValue, Object newValue);
 
-    /**
-     * Gets all Notes from the repository
-     *
-     * @return Collection
-     */
-    Collection<Note> getNotes();
+    enum Type {
 
-    Collection<Notebook> getNotebooks();
-
-    Notebook getNotebook(String uid);
-
-    boolean deleteNotebook(String uid);
-
-    Notebook createNotebook(String uid, String summary);
+        NEW, DELETE, UPDATE;
+    }
 }

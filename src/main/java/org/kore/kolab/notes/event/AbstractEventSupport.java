@@ -14,36 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.kore.kolab.notes;
+package org.kore.kolab.notes.event;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Konrad Renner
  */
-public interface NotesRepository {
+public class AbstractEventSupport implements EventSupport {
 
-    /**
-     * Gets a note with the given UID
-     *
-     * @param uid
-     * @return Note
-     */
-    Note getNote(String uid);
+    private final List<EventListener> listener = new ArrayList<EventListener>();
 
-    /**
-     * Gets all Notes from the repository
-     *
-     * @return Collection
-     */
-    Collection<Note> getNotes();
+    @Override
+    public void addListener(EventListener listener) {
+        this.listener.add(listener);
+    }
 
-    Collection<Notebook> getNotebooks();
+    @Override
+    public void firePropertyChange(String uid, EventListener.Type type, String propertyName, Object oldValue, Object newValue) {
+        for (EventListener list : listener) {
+            list.propertyChanged(uid, type, propertyName, oldValue, newValue);
+        }
+    }
 
-    Notebook getNotebook(String uid);
-
-    boolean deleteNotebook(String uid);
-
-    Notebook createNotebook(String uid, String summary);
 }

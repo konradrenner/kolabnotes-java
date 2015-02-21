@@ -16,10 +16,8 @@
  */
 package org.kore.kolab.notes.imap;
 
-import java.util.Collection;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
-import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.v3.KolabNotesParserV3;
 
 /**
@@ -34,8 +32,8 @@ public class ImapRepositoryTest {
     @Test
     public void testSomeMethod() {
         AccountInformation info = AccountInformation.createForHost("imap.kolabnow.com").username("").password("").build();
-        Collection<Note> notes = new ImapRepository(new KolabNotesParserV3(), info, "Notes").getNotes();
-        System.out.println(notes.toString());
+        ImapRepository imapRepository = new ImapRepository(new KolabNotesParserV3(), info, "Notes");
+        System.out.println(imapRepository.getNotes().toString());
+        System.out.println(imapRepository.getNotebooks().toString());
     }
-
 }

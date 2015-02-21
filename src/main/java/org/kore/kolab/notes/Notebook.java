@@ -16,10 +16,12 @@
  */
 package org.kore.kolab.notes;
 
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.kore.kolab.notes.event.EventListener;
 
 /**
  * Represents a notebook
@@ -43,12 +45,23 @@ public class Notebook extends Note {
     public Note getNote(String uid) {
         return notes.get(uid);
     }
-    
-    public void add(Note note) {
-        notes.put(note.getIdentification().getUid(), note);
+
+    public Note createNote(String uid, String summary) {
+        Identification identification = new Identification(uid, "kolabnotes-java");
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        AuditInformation audit = new AuditInformation(now, now);
+        Note note = new Note(identification, audit, Classification.PUBLIC, summary);
+        addNote(note);
+        return note;
     }
     
-    public void delete(String uid) {
+    public void addNote(Note note) {
+        firePropertyChange(getIdentification().getUid(), EventListener.Type.NEW, "note", null, note);
+        notes.put(note.getIdentification().getUid(), note);
+    }
+
+    public void deleteNote(String uid) {
+        firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "note", uid, null);
         notes.remove(uid);
     }
 
