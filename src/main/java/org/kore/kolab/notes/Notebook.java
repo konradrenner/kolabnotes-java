@@ -38,7 +38,7 @@ public class Notebook extends Note {
         this.notes = new LinkedHashMap<String, Note>();
     }
 
-    public Collection<Note> getAll() {
+    public Collection<Note> getNotes() {
         return Collections.unmodifiableCollection(notes.values());
     }
 

@@ -8,9 +8,9 @@ package org.kore.kolab.notes.imap;
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +47,8 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
     private final Map<String, EventListener.Type> eventCache;
     private final Map<String, Notebook> notebookCache;
     private final Map<String, Note> notesCache;
+    private final Map<String, Notebook> deletedNotebookCache;
+    private final Map<String, Map<String, Note>> deletedNotesCache;
     private final KolabNotesParser parser;
     private final AccountInformation account;
     private final String rootfolder;
@@ -55,10 +57,123 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
     public ImapRepository(KolabNotesParser parser, AccountInformation account, String rootFolder) {
         this.notebookCache = new ConcurrentHashMap<String, Notebook>();
         this.notesCache = new ConcurrentHashMap<String, Note>();
-        this.eventCache = new HashMap<String, EventListener.Type>();
+        this.deletedNotebookCache = new ConcurrentHashMap<String, Notebook>();
+        this.deletedNotesCache = new ConcurrentHashMap<String, Map<String, Note>>();
+        this.eventCache = new ConcurrentHashMap<String, EventListener.Type>();
         this.parser = parser;
         this.account = account;
         this.rootfolder = rootFolder;
+    }
+
+    @Override
+    public Map<String, Type> getTrackedChanges() {
+        return Collections.unmodifiableMap(eventCache);
+    }
+
+    @Override
+    public void merge(Map<String, Type> eventTypes) {
+        eventCache.putAll(eventTypes);
+        merge();
+    }
+
+    @Override
+    public void trackExisitingNotebooks(Collection<Notebook> existing) {
+        for (Notebook nb : existing) {
+            nb.addListener(this);
+            putInNotebookCache(nb.getIdentification().getUid(), nb);
+
+            for (Note note : nb.getNotes()) {
+                note.addListener(this);
+                putInNotesCache(note.getIdentification().getUid(), note);
+            }
+        }
+    }
+
+    enum PropertyChangeStrategy {
+
+        NOTHING {
+
+            @Override
+            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                //Do nothing
+            }
+
+        },
+        DELETE_NEW {
+
+            @Override
+            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                //if a newly created element should be removed, there must  be no changes sent to the server
+                repo.removeEvent(uid);
+            }
+
+        }, DELETE {
+
+            @Override
+            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                EventListener.Type correctType = type;
+                if ("notebook".equalsIgnoreCase(propertyName)) {
+                    Notebook removed = repo.removeFromNotebookCache(uid);
+                    //Remove all notes also
+                    for (Note note : removed.getNotes()) {
+                        repo.removeFromNotesCache(uid, note.getIdentification().getUid());
+                    }
+                } else if ("note".equalsIgnoreCase(propertyName)) {
+                    repo.removeFromNotesCache(uid, oldValue.toString());
+                } else if ("categories".equalsIgnoreCase(propertyName)) {
+                    correctType = EventListener.Type.UPDATE;
+                }
+                repo.putEvent(uid, correctType);
+            }
+
+        }, NEW {
+
+            @Override
+            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                EventListener.Type correctType = type;
+                if ("notebook".equalsIgnoreCase(propertyName)) {
+                    repo.putInNotebookCache(uid, (Notebook) newValue);
+                } else if ("note".equalsIgnoreCase(propertyName)) {
+                    repo.putInNotesCache(uid, (Note) newValue);
+                } else if ("categories".equalsIgnoreCase(propertyName)) {
+                    correctType = EventListener.Type.UPDATE;
+                }
+                repo.putEvent(uid, correctType);
+            }
+
+        }, UPDATE {
+
+            @Override
+            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                if (valueChanged(oldValue, newValue)) {
+                    repo.putEvent(uid, type);
+                }
+            }
+
+        };
+
+        static boolean valueChanged(Object oldValue, Object newValue) {
+            if (oldValue == null && newValue != null) {
+                return true;
+            }
+
+            return oldValue != null && !oldValue.equals(newValue);
+        }
+
+        static PropertyChangeStrategy valueOf(Type existingtype, Type newChangeType) {
+            if (existingtype == EventListener.Type.NEW && newChangeType == EventListener.Type.DELETE) {
+                return DELETE_NEW;
+            } else if (newChangeType == EventListener.Type.DELETE) {
+                return DELETE;
+            } else if (newChangeType == EventListener.Type.NEW) {
+                return NEW;
+            } else if (existingtype == null) {
+                return UPDATE;
+            }
+            return NOTHING;
+        }
+
+        abstract void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue);
     }
 
     @Override
@@ -69,44 +184,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
 
         EventListener.Type eventType = eventCache.get(uid);
 
-        if (eventType == EventListener.Type.NEW && type == EventListener.Type.DELETE) {
-            //if an newly created element should be removed, there must  be no changes sent to the server
-            eventCache.remove(uid);
-        } else if (type == EventListener.Type.DELETE) {
-            EventListener.Type correctType = type;
-            if ("notebook".equalsIgnoreCase(propertyName)) {
-                notebookCache.remove(uid);
-            } else if ("note".equalsIgnoreCase(propertyName)) {
-                notesCache.remove(uid);
-            } else if ("categories".equalsIgnoreCase(propertyName)) {
-                correctType = EventListener.Type.UPDATE;
-            }
-            eventCache.put(uid, correctType);
-        } else if (type == EventListener.Type.NEW) {
-            EventListener.Type correctType = type;
-            if ("notebook".equalsIgnoreCase(propertyName)) {
-                notebookCache.put(uid, (Notebook) newValue);
-            } else if ("note".equalsIgnoreCase(propertyName)) {
-                notesCache.put(uid, (Note) newValue);
-            } else if ("categories".equalsIgnoreCase(propertyName)) {
-                correctType = EventListener.Type.UPDATE;
-            }
-            eventCache.put(uid, type);
-        }
-
-        if (valueChanged(oldValue, newValue)) {
-            if (eventType == null) {
-                eventCache.put(uid, type);
-            }
-        }
-    }
-
-    public boolean valueChanged(Object oldValue, Object newValue) {
-        if (oldValue == null && newValue != null) {
-            return true;
-        }
-
-        return oldValue != null && !oldValue.equals(oldValue);
+        PropertyChangeStrategy.valueOf(eventType, type).performChange(this, uid, type, propertyName, oldValue, newValue);
     }
 
     public EventListener.Type getEvent(String uid) {
@@ -141,8 +219,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
     @Override
     public boolean deleteNotebook(String id) {
         propertyChanged(id, EventListener.Type.DELETE, "notebook", id, null);
-        Notebook remove = notebookCache.remove(id);
-        return remove != null;
+        return notebookCache.get(id) == null;
     }
 
     @Override
@@ -197,7 +274,10 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
 
             //Actual there are no notebooks in notebooks supported
-            for (Notebook book : getNotebooks()) {
+            ArrayList<Notebook> notebooks = new ArrayList<Notebook>(getNotebooks());
+            //Deleted notebooks must be merged with the server too (delete from server)
+            notebooks.addAll(deletedNotebookCache.values());
+            for (Notebook book : notebooks) {
                 Folder folder = store.getFolder(book.getSummary());
 
                 Type event = getEvent(book.getIdentification().getUid());
@@ -225,7 +305,12 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
                         folder.open(Folder.READ_WRITE);
                     }
 
-                    for (Note note : book.getAll()) {
+                    ArrayList<Note> notes = new ArrayList<Note>(book.getNotes());
+                    Map<String, Note> deletedNotes = deletedNotesCache.get(book.getIdentification().getUid());
+                    if (deletedNotes != null) {
+                        notes.addAll(deletedNotes.values());
+                    }
+                    for (Note note : notes) {
                         Message[] messages = folder.getMessages();
 
                         event = getEvent(note.getIdentification().getUid());
@@ -315,7 +400,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         Note.AuditInformation audit = new Note.AuditInformation(now, now);
 
         Notebook notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
-        notebookCache.put(notebook.getIdentification().getUid(), notebook);
+        addNotebook(notebook.getIdentification().getUid(), notebook);
         
         for (Message m : messages) {
             Multipart content = (Multipart) m.getContent();
@@ -324,9 +409,54 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
                 if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
                     Note note = parser.parseNote(bodyPart.getInputStream());
                     notebook.addNote(note);
-                    notesCache.put(note.getIdentification().getUid(), note);
+                    addNote(note.getIdentification().getUid(), note);
                 }
             }
         }
+    }
+
+    void addNotebook(String uid, Notebook notebook) {
+        notebookCache.put(uid, notebook);
+    }
+
+    void addNote(String uid, Note note) {
+        notesCache.put(uid, note);
+    }
+
+    Notebook removeFromNotebookCache(String uid) {
+        Notebook remove = notebookCache.remove(uid);
+        if (remove != null) {
+            deletedNotebookCache.put(uid, remove);
+        }
+        return remove;
+    }
+
+    void removeFromNotesCache(String uidNotebook, String uidNote) {
+        Note remove = notesCache.remove(uidNote);
+        if (remove != null) {
+            Map<String, Note> book = deletedNotesCache.get(uidNotebook);
+
+            if (book == null) {
+                book = new ConcurrentHashMap<String, Note>();
+                deletedNotesCache.put(uidNotebook, book);
+            }
+            book.put(uidNote, remove);
+        }
+    }
+
+    void putInNotebookCache(String uid, Notebook value) {
+        notebookCache.put(uid, value);
+    }
+
+    void putInNotesCache(String uid, Note value) {
+        notesCache.put(uid, value);
+    }
+
+    void removeEvent(String uid) {
+        eventCache.remove(uid);
+    }
+
+    void putEvent(String uid, Type type) {
+        eventCache.put(uid, type);
     }
 }

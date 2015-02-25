@@ -46,4 +46,13 @@ public interface NotesRepository {
     boolean deleteNotebook(String uid);
 
     Notebook createNotebook(String uid, String summary);
+
+    /**
+     * Tracks existing notebooks, e.g. from another Repository. This method can
+     * also be used, if you want to initialize the repository with data. Note:
+     * The given notebooks will referenced, not copied!
+     *
+     * @param existing
+     */
+    void trackExisitingNotebooks(Collection<Notebook> existing);
 }

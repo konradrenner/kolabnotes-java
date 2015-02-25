@@ -16,6 +16,9 @@
  */
 package org.kore.kolab.notes;
 
+import java.util.Map;
+import org.kore.kolab.notes.event.EventListener;
+
 /**
  *
  * @author Konrad Renner
@@ -29,7 +32,28 @@ public interface RemoteNotesRepository extends NotesRepository {
     void refresh();
 
     /**
-     * Sends changes to the remote server
+     * Sends tracked changes to the remote server. Note: Changes are just
+     * tracked, if the changes are made on objects which "live" in the the
+     * current instance of the Repository. See also method merge(Map)
+     *
+     * @see RemoteNotesRepository.merge(Map)
      */
     void merge();
+
+    /**
+     * Returns an unmodifyable map, with the type of a change per UID of a
+     * notebook or note
+     *
+     * @return Map
+     */
+    Map<String, EventListener.Type> getTrackedChanges();
+
+    /**
+     * Sends tracked and given changes to the remote server. This method should
+     * be used, if there are changes which were not tracked by this repository,
+     * but you want to send these changes to the server
+     *
+     * @param eventTypes
+     */
+    void merge(Map<String, EventListener.Type> eventTypes);
 }
