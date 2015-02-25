@@ -18,6 +18,7 @@ package org.kore.kolab.notes.imap;
 
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -32,6 +33,7 @@ import org.kore.kolab.notes.v3.KolabNotesParserV3;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -52,33 +54,36 @@ public class ImapRepositoryTest {
     @Test
     public void testPropertyChangedDeleteNotebook() {
         ImapRepository repo = mock(ImapRepository.class);
+        Notebook mockbook = mock(Notebook.class);
+        when(mockbook.getNotes()).thenReturn(Collections.EMPTY_LIST);
+        when(repo.removeFromNotebookCache("UID")).thenReturn(mockbook);
         
+        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "notebook", null, null);
+
         verify(repo).putEvent("UID", EventListener.Type.DELETE);
         verify(repo).removeFromNotebookCache("UID");
-
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "notebook", null, null);
     }
 
     @Test
     public void testPropertyChangedDeleteNote() {
         ImapRepository repo = mock(ImapRepository.class);
 
+        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "note", "NOTE", null);
+
         verify(repo).putEvent("UID", EventListener.Type.DELETE);
         verify(repo).removeFromNotesCache("UID", "NOTE");
         verify(repo, times(0)).removeFromNotebookCache("UID");
-
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "note", "NOTE", null);
     }
 
     @Test
     public void testPropertyChangedDeleteCategorie() {
         ImapRepository repo = mock(ImapRepository.class);
 
+        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "categories", "NOTE", null);
+
         verify(repo).putEvent("UID", EventListener.Type.UPDATE);
         verify(repo, times(0)).removeFromNotesCache("UID", "NOTE");
         verify(repo, times(0)).removeFromNotebookCache("UID");
-
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "categories", "NOTE", null);
     }
 
     @Test
@@ -86,10 +91,10 @@ public class ImapRepositoryTest {
         ImapRepository repo = mock(ImapRepository.class);
         Notebook value = mock(Notebook.class);
 
+        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "notebook", null, value);
+
         verify(repo).putEvent("UID", EventListener.Type.NEW);
         verify(repo).putInNotebookCache("UID", value);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "notebook", null, value);
     }
 
     @Test
@@ -97,10 +102,10 @@ public class ImapRepositoryTest {
         ImapRepository repo = mock(ImapRepository.class);
         Note value = mock(Note.class);
 
+        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "note", null, value);
+
         verify(repo).putEvent("UID", EventListener.Type.NEW);
         verify(repo).putInNotesCache("UID", value);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "note", null, value);
     }
 
     @Test
@@ -108,10 +113,10 @@ public class ImapRepositoryTest {
         ImapRepository repo = mock(ImapRepository.class);
         Note value = mock(Note.class);
 
+        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "categories", null, value);
+
         verify(repo).putEvent("UID", EventListener.Type.UPDATE);
         verify(repo, times(0)).putInNotesCache("UID", value);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "categories", null, value);
     }
 
     @Test
@@ -187,6 +192,10 @@ public class ImapRepositoryTest {
 
     @Test
     public void testCreateNotebook() {
+        Notebook createNotebook = imapRepository.createNotebook("NewBookUID", "Cool New Book");
+        
+        assertEquals("Cool New Book", createNotebook.getSummary());
+        assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
     }
 
     @Test

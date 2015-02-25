@@ -227,8 +227,8 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         Note.Identification identification = new Note.Identification(uid, "kolabnotes-java");
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Note.AuditInformation audit = new Note.AuditInformation(now, now);
-        Notebook notebook = new Notebook(identification, audit, Note.Classification.PUBLIC, uid);
-        propertyChanged(uid, EventListener.Type.DELETE, "notebook", null, notebook);
+        Notebook notebook = new Notebook(identification, audit, Note.Classification.PUBLIC, summary);
+        propertyChanged(uid, EventListener.Type.NEW, "notebook", null, notebook);
         return notebook;
     }
 
