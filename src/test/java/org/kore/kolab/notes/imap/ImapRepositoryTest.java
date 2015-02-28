@@ -200,28 +200,24 @@ public class ImapRepositoryTest {
 
     @Test
     public void testRefresh() {
+        //This test could fail, it depends on the server settings and of course on the notes on the server!
+        imapRepository.refresh();
+        Collection<Notebook> notebooks = imapRepository.getNotebooks();
+
+        assertFalse(notebooks.isEmpty());
     }
 
     @Test
     public void testMerge() {
+        Notebook createNotebook = imapRepository.createNotebook("Testingbook-UID", "Testbook");
+        Note note = createNotebook.createNote("Testingnote-UID", "Testingnote");
+        note.setDescription("Beschreibung");
+        note.addCategories("Work", "Family");
+        note.setClassification(Note.Classification.CONFIDENTIAL);
+
+        imapRepository.merge();
     }
 
-    @Test
-    public void testSetKolabXML() throws Exception {
-    }
-
-    @Test
-    public void testFindMessage() throws Exception {
-    }
-
-    @Test
-    public void testInitCache() {
-    }
-
-    @Test
-    public void testInitNotesFromFolder() throws Exception {
-    }
-    
     void createTestdata() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Note.Identification ident = new Note.Identification("bookOne", "kolabnotes-java");

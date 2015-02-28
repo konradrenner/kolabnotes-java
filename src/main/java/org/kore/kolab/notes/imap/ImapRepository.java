@@ -348,9 +348,9 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
                             }
                         }
                     }
+                    folder.close(true);
                 }
             }
-
             store.close();
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -417,10 +417,12 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
 
     void addNotebook(String uid, Notebook notebook) {
         notebookCache.put(uid, notebook);
+        notebook.addListener(this);
     }
 
     void addNote(String uid, Note note) {
         notesCache.put(uid, note);
+        note.addListener(this);
     }
 
     Notebook removeFromNotebookCache(String uid) {
