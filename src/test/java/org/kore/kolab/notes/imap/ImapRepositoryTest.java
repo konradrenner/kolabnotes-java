@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.Note;
@@ -198,6 +199,7 @@ public class ImapRepositoryTest {
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
     }
 
+    @Ignore
     @Test
     public void testRefresh() {
         //This test could fail, it depends on the server settings and of course on the notes on the server!
@@ -207,6 +209,7 @@ public class ImapRepositoryTest {
         assertFalse(notebooks.isEmpty());
     }
 
+    @Ignore
     @Test
     public void testMerge() {
         Notebook createNotebook = imapRepository.createNotebook("Testingbook-UID", "Testbook");
