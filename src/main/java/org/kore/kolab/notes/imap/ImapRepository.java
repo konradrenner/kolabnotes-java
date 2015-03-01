@@ -5,6 +5,16 @@
  */
 package org.kore.kolab.notes.imap;
 
+import android.service.textservice.SpellCheckerService.Session;
+import com.fsck.k9.mail.BodyPart;
+import com.fsck.k9.mail.Folder;
+import com.fsck.k9.mail.Message;
+import com.fsck.k9.mail.MessagingException;
+import com.fsck.k9.mail.Multipart;
+import com.fsck.k9.mail.Store;
+import com.fsck.k9.mail.internet.MimeBodyPart;
+import com.fsck.k9.mail.internet.MimeMessage;
+import com.fsck.k9.mail.internet.MimeMultipart;
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -14,18 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.mail.BodyPart;
-import javax.mail.Flags;
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Store;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.KolabNotesParser;
 import org.kore.kolab.notes.Note;
