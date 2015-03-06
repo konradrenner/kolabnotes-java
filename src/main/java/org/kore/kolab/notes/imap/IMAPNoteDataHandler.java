@@ -16,7 +16,7 @@
  */
 package org.kore.kolab.notes.imap;
 
-import javax.activation.DataHandler;
+import korex.activation.DataHandler;
 
 /**
  *

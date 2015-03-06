@@ -206,6 +206,7 @@ public class ImapRepositoryTest {
         imapRepository.refresh();
         Collection<Notebook> notebooks = imapRepository.getNotebooks();
 
+        System.out.println(notebooks);
         assertFalse(notebooks.isEmpty());
     }
 
