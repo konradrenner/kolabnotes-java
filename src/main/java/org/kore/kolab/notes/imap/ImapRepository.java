@@ -5,16 +5,6 @@
  */
 package org.kore.kolab.notes.imap;
 
-import android.service.textservice.SpellCheckerService.Session;
-import com.fsck.k9.mail.BodyPart;
-import com.fsck.k9.mail.Folder;
-import com.fsck.k9.mail.Message;
-import com.fsck.k9.mail.MessagingException;
-import com.fsck.k9.mail.Multipart;
-import com.fsck.k9.mail.Store;
-import com.fsck.k9.mail.internet.MimeBodyPart;
-import com.fsck.k9.mail.internet.MimeMessage;
-import com.fsck.k9.mail.internet.MimeMultipart;
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -24,6 +14,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import korex.mail.BodyPart;
+import korex.mail.Flags;
+import korex.mail.Folder;
+import korex.mail.Message;
+import korex.mail.MessagingException;
+import korex.mail.Multipart;
+import korex.mail.Session;
+import korex.mail.Store;
+import korex.mail.internet.InternetAddress;
+import korex.mail.internet.MimeBodyPart;
+import korex.mail.internet.MimeMessage;
+import korex.mail.internet.MimeMultipart;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.KolabNotesParser;
 import org.kore.kolab.notes.Note;
@@ -91,64 +93,64 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
 
         NOTHING {
 
-            @Override
-            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                //Do nothing
-            }
+                    @Override
+                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                        //Do nothing
+                    }
 
-        },
+                },
         DELETE_NEW {
 
-            @Override
-            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                //if a newly created element should be removed, there must  be no changes sent to the server
-                repo.removeEvent(uid);
-            }
-
-        }, DELETE {
-
-            @Override
-            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                EventListener.Type correctType = type;
-                if ("notebook".equalsIgnoreCase(propertyName)) {
-                    Notebook removed = repo.removeFromNotebookCache(uid);
-                    //Remove all notes also
-                    for (Note note : removed.getNotes()) {
-                        repo.removeFromNotesCache(uid, note.getIdentification().getUid());
+                    @Override
+                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                        //if a newly created element should be removed, there must  be no changes sent to the server
+                        repo.removeEvent(uid);
                     }
-                } else if ("note".equalsIgnoreCase(propertyName)) {
-                    repo.removeFromNotesCache(uid, oldValue.toString());
-                } else if ("categories".equalsIgnoreCase(propertyName)) {
-                    correctType = EventListener.Type.UPDATE;
-                }
-                repo.putEvent(uid, correctType);
-            }
 
-        }, NEW {
+                }, DELETE {
 
-            @Override
-            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                EventListener.Type correctType = type;
-                if ("notebook".equalsIgnoreCase(propertyName)) {
-                    repo.putInNotebookCache(uid, (Notebook) newValue);
-                } else if ("note".equalsIgnoreCase(propertyName)) {
-                    repo.putInNotesCache(uid, (Note) newValue);
-                } else if ("categories".equalsIgnoreCase(propertyName)) {
-                    correctType = EventListener.Type.UPDATE;
-                }
-                repo.putEvent(uid, correctType);
-            }
+                    @Override
+                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                        EventListener.Type correctType = type;
+                        if ("notebook".equalsIgnoreCase(propertyName)) {
+                            Notebook removed = repo.removeFromNotebookCache(uid);
+                            //Remove all notes also
+                            for (Note note : removed.getNotes()) {
+                                repo.removeFromNotesCache(uid, note.getIdentification().getUid());
+                            }
+                        } else if ("note".equalsIgnoreCase(propertyName)) {
+                            repo.removeFromNotesCache(uid, oldValue.toString());
+                        } else if ("categories".equalsIgnoreCase(propertyName)) {
+                            correctType = EventListener.Type.UPDATE;
+                        }
+                        repo.putEvent(uid, correctType);
+                    }
 
-        }, UPDATE {
+                }, NEW {
 
-            @Override
-            public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                if (valueChanged(oldValue, newValue)) {
-                    repo.putEvent(uid, type);
-                }
-            }
+                    @Override
+                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                        EventListener.Type correctType = type;
+                        if ("notebook".equalsIgnoreCase(propertyName)) {
+                            repo.putInNotebookCache(uid, (Notebook) newValue);
+                        } else if ("note".equalsIgnoreCase(propertyName)) {
+                            repo.putInNotesCache(uid, (Note) newValue);
+                        } else if ("categories".equalsIgnoreCase(propertyName)) {
+                            correctType = EventListener.Type.UPDATE;
+                        }
+                        repo.putEvent(uid, correctType);
+                    }
 
-        };
+                }, UPDATE {
+
+                    @Override
+                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
+                        if (valueChanged(oldValue, newValue)) {
+                            repo.putEvent(uid, type);
+                        }
+                    }
+
+                };
 
         static boolean valueChanged(Object oldValue, Object newValue) {
             if (oldValue == null && newValue != null) {
@@ -212,7 +214,6 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         initCache();
         return notebookCache.get(uid);
     }
-
 
     @Override
     public boolean deleteNotebook(String id) {
@@ -293,7 +294,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
 
                         if (event == Type.UPDATE || event == Type.NEW) {
                             folder.renameTo(store.getFolder(book.getSummary()));
-                        } 
+                        }
                     }
                 }
 
@@ -383,7 +384,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         return null;
     }
 
-    void initCache(){
+    void initCache() {
         if (notesCache.isEmpty()) {
             refresh();
         }
@@ -399,7 +400,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
 
         Notebook notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
         addNotebook(notebook.getIdentification().getUid(), notebook);
-        
+
         for (Message m : messages) {
             Multipart content = (Multipart) m.getContent();
             for (int i = 0; i < content.getCount(); i++) {
