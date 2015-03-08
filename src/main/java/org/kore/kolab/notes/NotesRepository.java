@@ -17,6 +17,8 @@
 package org.kore.kolab.notes;
 
 import java.util.Collection;
+import java.util.Map;
+import org.kore.kolab.notes.event.EventListener;
 
 /**
  *
@@ -55,4 +57,12 @@ public interface NotesRepository {
      * @param existing
      */
     void trackExisitingNotebooks(Collection<Notebook> existing);
+
+    /**
+     * Returns an unmodifyable map, with the type of a change per UID of a
+     * notebook or note
+     *
+     * @return Map
+     */
+    Map<String, EventListener.Type> getTrackedChanges();
 }

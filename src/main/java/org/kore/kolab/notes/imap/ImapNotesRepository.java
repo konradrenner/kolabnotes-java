@@ -6,14 +6,10 @@
 package org.kore.kolab.notes.imap;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import korex.mail.BodyPart;
 import korex.mail.Flags;
 import korex.mail.Folder;
@@ -31,204 +27,30 @@ import org.kore.kolab.notes.KolabNotesParser;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
 import org.kore.kolab.notes.RemoteNotesRepository;
-import org.kore.kolab.notes.event.EventListener;
+import org.kore.kolab.notes.local.LocalNotesRepository;
 
 /**
  *
  * @author Konrad Renner
  */
-public class ImapRepository implements RemoteNotesRepository, EventListener, Serializable {
+public class ImapNotesRepository extends LocalNotesRepository implements RemoteNotesRepository {
 
     private final static String KOLAB_TEXT = "This is a Kolab Groupware object.\n"
             + "To view this object you will need a Kolab Groupware Client.\n"
             + "For a list of Kolab Groupware Clients please visit:\n"
             + "http://www.kolab.org/get-kolab";
 
-    private final Map<String, EventListener.Type> eventCache;
-    private final Map<String, Notebook> notebookCache;
-    private final Map<String, Note> notesCache;
-    private final Map<String, Notebook> deletedNotebookCache;
-    private final Map<String, Map<String, Note>> deletedNotesCache;
-    private final KolabNotesParser parser;
     private final AccountInformation account;
-    private final String rootfolder;
-    private boolean disableChangeListening = false;
 
-    public ImapRepository(KolabNotesParser parser, AccountInformation account, String rootFolder) {
-        this.notebookCache = new ConcurrentHashMap<String, Notebook>();
-        this.notesCache = new ConcurrentHashMap<String, Note>();
-        this.deletedNotebookCache = new ConcurrentHashMap<String, Notebook>();
-        this.deletedNotesCache = new ConcurrentHashMap<String, Map<String, Note>>();
-        this.eventCache = new ConcurrentHashMap<String, EventListener.Type>();
-        this.parser = parser;
+    public ImapNotesRepository(KolabNotesParser parser, AccountInformation account, String rootFolder) {
+        super(parser, rootFolder);
         this.account = account;
-        this.rootfolder = rootFolder;
-    }
-
-    @Override
-    public Map<String, Type> getTrackedChanges() {
-        return Collections.unmodifiableMap(eventCache);
     }
 
     @Override
     public void merge(Map<String, Type> eventTypes) {
         eventCache.putAll(eventTypes);
         merge();
-    }
-
-    @Override
-    public void trackExisitingNotebooks(Collection<Notebook> existing) {
-        for (Notebook nb : existing) {
-            nb.addListener(this);
-            putInNotebookCache(nb.getIdentification().getUid(), nb);
-
-            for (Note note : nb.getNotes()) {
-                note.addListener(this);
-                putInNotesCache(note.getIdentification().getUid(), note);
-            }
-        }
-    }
-
-    enum PropertyChangeStrategy {
-
-        NOTHING {
-
-                    @Override
-                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                        //Do nothing
-                    }
-
-                },
-        DELETE_NEW {
-
-                    @Override
-                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                        //if a newly created element should be removed, there must  be no changes sent to the server
-                        repo.removeEvent(uid);
-                    }
-
-                }, DELETE {
-
-                    @Override
-                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                        EventListener.Type correctType = type;
-                        if ("notebook".equalsIgnoreCase(propertyName)) {
-                            Notebook removed = repo.removeFromNotebookCache(uid);
-                            //Remove all notes also
-                            for (Note note : removed.getNotes()) {
-                                repo.removeFromNotesCache(uid, note.getIdentification().getUid());
-                            }
-                        } else if ("note".equalsIgnoreCase(propertyName)) {
-                            repo.removeFromNotesCache(uid, oldValue.toString());
-                        } else if ("categories".equalsIgnoreCase(propertyName)) {
-                            correctType = EventListener.Type.UPDATE;
-                        }
-                        repo.putEvent(uid, correctType);
-                    }
-
-                }, NEW {
-
-                    @Override
-                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                        EventListener.Type correctType = type;
-                        if ("notebook".equalsIgnoreCase(propertyName)) {
-                            repo.putInNotebookCache(uid, (Notebook) newValue);
-                        } else if ("note".equalsIgnoreCase(propertyName)) {
-                            repo.putInNotesCache(uid, (Note) newValue);
-                        } else if ("categories".equalsIgnoreCase(propertyName)) {
-                            correctType = EventListener.Type.UPDATE;
-                        }
-                        repo.putEvent(uid, correctType);
-                    }
-
-                }, UPDATE {
-
-                    @Override
-                    public void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-                        if (valueChanged(oldValue, newValue)) {
-                            repo.putEvent(uid, type);
-                        }
-                    }
-
-                };
-
-        static boolean valueChanged(Object oldValue, Object newValue) {
-            if (oldValue == null && newValue != null) {
-                return true;
-            }
-
-            return oldValue != null && !oldValue.equals(newValue);
-        }
-
-        static PropertyChangeStrategy valueOf(Type existingtype, Type newChangeType) {
-            if (existingtype == EventListener.Type.NEW && newChangeType == EventListener.Type.DELETE) {
-                return DELETE_NEW;
-            } else if (newChangeType == EventListener.Type.DELETE) {
-                return DELETE;
-            } else if (newChangeType == EventListener.Type.NEW) {
-                return NEW;
-            } else if (existingtype == null) {
-                return UPDATE;
-            }
-            return NOTHING;
-        }
-
-        abstract void performChange(ImapRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue);
-    }
-
-    @Override
-    public void propertyChanged(String uid, Type type, String propertyName, Object oldValue, Object newValue) {
-        if (disableChangeListening) {
-            return;
-        }
-
-        EventListener.Type eventType = eventCache.get(uid);
-
-        PropertyChangeStrategy.valueOf(eventType, type).performChange(this, uid, type, propertyName, oldValue, newValue);
-    }
-
-    public EventListener.Type getEvent(String uid) {
-        return eventCache.get(uid);
-    }
-
-    @Override
-    public Note getNote(String id) {
-        initCache();
-        return notesCache.get(id);
-    }
-
-    @Override
-    public Collection<Note> getNotes() {
-        initCache();
-        return Collections.unmodifiableCollection(notesCache.values());
-    }
-
-    @Override
-    public Collection<Notebook> getNotebooks() {
-        initCache();
-        return Collections.unmodifiableCollection(notebookCache.values());
-    }
-
-    @Override
-    public Notebook getNotebook(String uid) {
-        initCache();
-        return notebookCache.get(uid);
-    }
-
-    @Override
-    public boolean deleteNotebook(String id) {
-        propertyChanged(id, EventListener.Type.DELETE, "notebook", id, null);
-        return notebookCache.get(id) == null;
-    }
-
-    @Override
-    public Notebook createNotebook(String uid, String summary) {
-        Note.Identification identification = new Note.Identification(uid, "kolabnotes-java");
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        Note.AuditInformation audit = new Note.AuditInformation(now, now);
-        Notebook notebook = new Notebook(identification, audit, Note.Classification.PUBLIC, summary);
-        propertyChanged(uid, EventListener.Type.NEW, "notebook", null, notebook);
-        return notebook;
     }
 
     @Override
@@ -262,7 +84,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
     @Override
     public void merge() {
         initCache();
-        disableChangeListening = true;
+        disableChangeListening();
         try {
             Properties props = new Properties();
 
@@ -354,7 +176,7 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         } catch (Exception e) {
             throw new IllegalStateException(e);
         } finally {
-            disableChangeListening = false;
+            enableChangeListening();
         }
     }
 
@@ -384,10 +206,21 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
         return null;
     }
 
-    void initCache() {
+    @Override
+    protected void initCache() {
         if (notesCache.isEmpty()) {
             refresh();
         }
+    }
+    
+    @Override
+    protected void addNotebook(String uid, Notebook notebook) {
+        super.addNotebook(uid, notebook);
+    }
+    
+    @Override
+    protected void addNote(String uid, Note note) {
+        super.addNote(uid, note);
     }
 
     void initNotesFromFolder(Folder folder) throws MessagingException, IOException {
@@ -412,52 +245,5 @@ public class ImapRepository implements RemoteNotesRepository, EventListener, Ser
                 }
             }
         }
-    }
-
-    void addNotebook(String uid, Notebook notebook) {
-        notebookCache.put(uid, notebook);
-        notebook.addListener(this);
-    }
-
-    void addNote(String uid, Note note) {
-        notesCache.put(uid, note);
-        note.addListener(this);
-    }
-
-    Notebook removeFromNotebookCache(String uid) {
-        Notebook remove = notebookCache.remove(uid);
-        if (remove != null) {
-            deletedNotebookCache.put(uid, remove);
-        }
-        return remove;
-    }
-
-    void removeFromNotesCache(String uidNotebook, String uidNote) {
-        Note remove = notesCache.remove(uidNote);
-        if (remove != null) {
-            Map<String, Note> book = deletedNotesCache.get(uidNotebook);
-
-            if (book == null) {
-                book = new ConcurrentHashMap<String, Note>();
-                deletedNotesCache.put(uidNotebook, book);
-            }
-            book.put(uidNote, remove);
-        }
-    }
-
-    void putInNotebookCache(String uid, Notebook value) {
-        notebookCache.put(uid, value);
-    }
-
-    void putInNotesCache(String uid, Note value) {
-        notesCache.put(uid, value);
-    }
-
-    void removeEvent(String uid) {
-        eventCache.remove(uid);
-    }
-
-    void putEvent(String uid, Type type) {
-        eventCache.put(uid, type);
     }
 }

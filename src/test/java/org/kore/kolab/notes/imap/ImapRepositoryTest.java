@@ -18,7 +18,6 @@ package org.kore.kolab.notes.imap;
 
 import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -31,10 +30,6 @@ import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
 import org.kore.kolab.notes.event.EventListener;
 import org.kore.kolab.notes.v3.KolabNotesParserV3;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  *
@@ -42,116 +37,14 @@ import static org.mockito.Mockito.when;
  */
 public class ImapRepositoryTest {
 
-    private ImapRepository imapRepository;
+    private ImapNotesRepository imapRepository;
 
     @Before
     public void setUp() {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-        imapRepository = new ImapRepository(new KolabNotesParserV3(), info, "Notes");
+        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
 
         createTestdata();
-    }
-
-    @Test
-    public void testPropertyChangedDeleteNotebook() {
-        ImapRepository repo = mock(ImapRepository.class);
-        Notebook mockbook = mock(Notebook.class);
-        when(mockbook.getNotes()).thenReturn(Collections.EMPTY_LIST);
-        when(repo.removeFromNotebookCache("UID")).thenReturn(mockbook);
-        
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "notebook", null, null);
-
-        verify(repo).putEvent("UID", EventListener.Type.DELETE);
-        verify(repo).removeFromNotebookCache("UID");
-    }
-
-    @Test
-    public void testPropertyChangedDeleteNote() {
-        ImapRepository repo = mock(ImapRepository.class);
-
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "note", "NOTE", null);
-
-        verify(repo).putEvent("UID", EventListener.Type.DELETE);
-        verify(repo).removeFromNotesCache("UID", "NOTE");
-        verify(repo, times(0)).removeFromNotebookCache("UID");
-    }
-
-    @Test
-    public void testPropertyChangedDeleteCategorie() {
-        ImapRepository repo = mock(ImapRepository.class);
-
-        ImapRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "categories", "NOTE", null);
-
-        verify(repo).putEvent("UID", EventListener.Type.UPDATE);
-        verify(repo, times(0)).removeFromNotesCache("UID", "NOTE");
-        verify(repo, times(0)).removeFromNotebookCache("UID");
-    }
-
-    @Test
-    public void testPropertyChangedNewNotebook() {
-        ImapRepository repo = mock(ImapRepository.class);
-        Notebook value = mock(Notebook.class);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "notebook", null, value);
-
-        verify(repo).putEvent("UID", EventListener.Type.NEW);
-        verify(repo).putInNotebookCache("UID", value);
-    }
-
-    @Test
-    public void testPropertyChangedNewNote() {
-        ImapRepository repo = mock(ImapRepository.class);
-        Note value = mock(Note.class);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "note", null, value);
-
-        verify(repo).putEvent("UID", EventListener.Type.NEW);
-        verify(repo).putInNotesCache("UID", value);
-    }
-
-    @Test
-    public void testPropertyChangedNewCategorie() {
-        ImapRepository repo = mock(ImapRepository.class);
-        Note value = mock(Note.class);
-
-        ImapRepository.PropertyChangeStrategy.NEW.performChange(repo, "UID", EventListener.Type.NEW, "categories", null, value);
-
-        verify(repo).putEvent("UID", EventListener.Type.UPDATE);
-        verify(repo, times(0)).putInNotesCache("UID", value);
-    }
-
-    @Test
-    public void testPropertyChangedValueOf() {
-        assertEquals(ImapRepository.PropertyChangeStrategy.DELETE, ImapRepository.PropertyChangeStrategy.valueOf(null, EventListener.Type.DELETE));
-        assertEquals(ImapRepository.PropertyChangeStrategy.DELETE_NEW, ImapRepository.PropertyChangeStrategy.valueOf(EventListener.Type.NEW, EventListener.Type.DELETE));
-        assertEquals(ImapRepository.PropertyChangeStrategy.NEW, ImapRepository.PropertyChangeStrategy.valueOf(null, EventListener.Type.NEW));
-        assertEquals(ImapRepository.PropertyChangeStrategy.UPDATE, ImapRepository.PropertyChangeStrategy.valueOf(null, EventListener.Type.UPDATE));
-        assertEquals(ImapRepository.PropertyChangeStrategy.NOTHING, ImapRepository.PropertyChangeStrategy.valueOf(EventListener.Type.DELETE, EventListener.Type.UPDATE));
-    }
-    
-    @Test
-    public void testValueChangedChanged() {
-        assertTrue(ImapRepository.PropertyChangeStrategy.valueChanged("test", "Test"));
-    }
-
-    @Test
-    public void testValueChangedBothNull() {
-        assertFalse(ImapRepository.PropertyChangeStrategy.valueChanged(null, null));
-    }
-
-    @Test
-    public void testValueChangedFirstNull() {
-        assertTrue(ImapRepository.PropertyChangeStrategy.valueChanged(null, "Test"));
-    }
-
-    @Test
-    public void testValueChangedSecondNull() {
-        assertTrue(ImapRepository.PropertyChangeStrategy.valueChanged("Test", null));
-    }
-
-    @Test
-    public void testValueChangedNot() {
-        assertFalse(ImapRepository.PropertyChangeStrategy.valueChanged("test", "test"));
     }
 
     @Test

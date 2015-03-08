@@ -41,14 +41,6 @@ public interface RemoteNotesRepository extends NotesRepository {
     void merge();
 
     /**
-     * Returns an unmodifyable map, with the type of a change per UID of a
-     * notebook or note
-     *
-     * @return Map
-     */
-    Map<String, EventListener.Type> getTrackedChanges();
-
-    /**
      * Sends tracked and given changes to the remote server. This method should
      * be used, if there are changes which were not tracked by this repository,
      * but you want to send these changes to the server
