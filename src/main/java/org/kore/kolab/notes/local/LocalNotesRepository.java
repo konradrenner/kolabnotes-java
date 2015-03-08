@@ -276,6 +276,12 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
         eventCache.put(uid, type);
     }
 
+    @Override
+    public KolabNotesParser getNotesParser() {
+        return this.parser;
+    }
+
+    @Override
     public String getRootFolder() {
         return rootfolder;
     }

@@ -49,6 +49,10 @@ public interface NotesRepository {
 
     Notebook createNotebook(String uid, String summary);
 
+    String getRootFolder();
+
+    KolabNotesParser getNotesParser();
+
     /**
      * Tracks existing notebooks, e.g. from another Repository. This method can
      * also be used, if you want to initialize the repository with data. Note:
