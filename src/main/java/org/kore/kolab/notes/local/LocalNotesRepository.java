@@ -276,6 +276,10 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
         eventCache.put(uid, type);
     }
 
+    public String getRootFolder() {
+        return rootfolder;
+    }
+
     @Override
     public int hashCode() {
         int hash = 7;
