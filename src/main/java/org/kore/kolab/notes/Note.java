@@ -31,7 +31,7 @@ import org.kore.kolab.notes.event.EventListener;
  * @author Konrad Renner
  * 
  */
-public class Note extends AbstractEventSupport implements Serializable {
+public class Note extends AbstractEventSupport implements Serializable, Comparable<Note> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -55,6 +55,21 @@ public class Note extends AbstractEventSupport implements Serializable {
 		this.summary = summary;
 		this.categories = new LinkedHashSet<String>();
     }
+
+    @Override
+    public int compareTo(Note o) {
+        if (this.equals(o)) {
+            return 0;
+        }
+
+        int ergebnis = o.getAuditInformation().getLastModificationDate().compareTo(getAuditInformation().getLastModificationDate());
+
+        if (ergebnis == 0) {
+            ergebnis = getSummary().compareTo(o.getSummary());
+        }
+        return ergebnis;
+    }
+
 
     public void addCategories(String... cats) {
         for (String cat : cats) {
@@ -176,6 +191,7 @@ public class Note extends AbstractEventSupport implements Serializable {
                 + color
                 + "]";
     }
+
 
     public static enum Classification {
 
