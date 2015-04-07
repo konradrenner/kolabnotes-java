@@ -1,15 +1,16 @@
 language: java
 env:
-global:
-# The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-# via the "travis encrypt" command using the project repo's public key
-- secure: "pP+XQ6q7c0KsFerphA7tfzctrfMxnYwFPFDjKCgkN5KyRq3J68n0eMNj46aD0IZF9FMf63/izAT/dWuGK6maEZHNcaaoz3yerXZjKFjujcpkvxAQhiCitLKS8R4TRAEFjBnHic4WqVDHpFdIM6vg4SS6OBv5+p+zUuWI38Uaoao="
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "mv5CSM760Uv5eYkcIFXRnB2sYZFOlAQJwFq4YKx8kBl1ghvVPboj8DZG6t0nloZen+u+l8J5JZFzYIMeSHLnQnSPy+6ou4pyr7hJtRbFBaN9IH1lVcBj4vw/+M+Vltqtuhdo25Mi65gGJhBYxy9aGmTjoT+n2EE6/BXp4y0+VUs="
+
 addons:
-coverity_scan:
-project:
-name: "konradrenner/kolabnotes-java"
-description: "<Your project description here>"
-notification_email: koni.renner@gmail.com
-build_command_prepend:
-build_command: mvn clean install -DskipTests=true -B -V
-branch_pattern: master
+  coverity_scan:
+    project:
+      name: "konradrenner/kolabnotes-java"
+      description: "Build submitted via Travis CI"
+    notification_email: koni.renner@gmail.com
+    build_command_prepend: "mvn clean"
+    build_command:   "mvn -DskipTests=true compile"
+    branch_pattern: master
