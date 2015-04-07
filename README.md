@@ -10,7 +10,7 @@ repositories {
 	}
 ...
 
-compile 'com.github.konradrenner:kore-javamail:[version]'
+compile 'com.github.konradrenner:kolabnotes-java:[version]'
 ```
 or in Maven:
 
@@ -22,7 +22,7 @@ or in Maven:
 ...
 <dependency> 
 	<groupId>com.github.konradrenner</groupId> 
-	<artifactId>kore-javamail</artifactId> 
+	<artifactId>kolabnotes-java</artifactId> 
 	<version>[version]</version> 
 </dependency>
 ``` 
