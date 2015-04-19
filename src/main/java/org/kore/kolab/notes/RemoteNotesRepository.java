@@ -28,17 +28,19 @@ public interface RemoteNotesRepository extends NotesRepository {
     /**
      * This method refreshes the local cache with data from a remote server.
      * Note: local changes will be discarded!
+     * @param listener
      */
-    void refresh();
+    void refresh(Listener... listener);
 
     /**
      * Sends tracked changes to the remote server. Note: Changes are just
      * tracked, if the changes are made on objects which "live" in the the
      * current instance of the Repository. See also method merge(Map)
      *
+     * @param listener
      * @see RemoteNotesRepository.merge(Map)
      */
-    void merge();
+    void merge(Listener... listener);
 
     /**
      * Sends tracked and given changes to the remote server. This method should
@@ -46,6 +48,12 @@ public interface RemoteNotesRepository extends NotesRepository {
      * but you want to send these changes to the server
      *
      * @param eventTypes
+     * @param listener
      */
-    void merge(Map<String, EventListener.Type> eventTypes);
+    void merge(Map<String, EventListener.Type> eventTypes, Listener... listener);
+
+    interface Listener {
+
+        void onSyncUpdate(String folderName);
+    }
 }

@@ -48,13 +48,13 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
 
     @Override
-    public void merge(Map<String, Type> eventTypes) {
+    public void merge(Map<String, Type> eventTypes, Listener... listener) {
         eventCache.putAll(eventTypes);
-        merge();
+        merge(listener);
     }
 
     @Override
-    public void refresh() {
+    public void refresh(Listener... listener) {
         notesCache.clear();
         notebookCache.clear();
         try {
@@ -73,6 +73,10 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
             for (Folder folder : allFolders) {
                 initNotesFromFolder(folder);
+                
+                for (Listener listen : listener) {
+                    listen.onSyncUpdate(folder.getFullName());
+                }
             }
 
             store.close();
@@ -82,7 +86,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
 
     @Override
-    public void merge() {
+    public void merge(Listener... listener) {
         initCache();
         disableChangeListening();
         try {
