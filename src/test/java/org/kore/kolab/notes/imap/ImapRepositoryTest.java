@@ -18,6 +18,7 @@ package org.kore.kolab.notes.imap;
 
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -44,7 +45,19 @@ public class ImapRepositoryTest {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
         imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
 
-        createTestdata();
+        //createTestdata();
+    }
+
+    @Test
+    public void testChange() {
+        imapRepository.refresh();
+        Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");
+        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
+        createNote.setClassification(Note.Classification.PRIVATE);
+        createNote.setDescription("the description");
+        createNote.addCategories("Work");
+        
+        imapRepository.merge();
     }
 
     @Test
@@ -90,6 +103,14 @@ public class ImapRepositoryTest {
         
         assertEquals("Cool New Book", createNotebook.getSummary());
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
+    }
+
+    @Test
+    public void testCreateNote() {
+        Note createNote = imapRepository.createNotebook("NewBookUID", "Cool New Book").createNote("NewNoteUID", "Summary");
+
+        assertEquals("Summary", createNote.getSummary());
+        assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewNoteUID"));
     }
 
     @Ignore

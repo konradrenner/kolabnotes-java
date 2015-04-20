@@ -43,4 +43,5 @@ public interface KolabNotesParser extends Serializable {
      * @param note
      */
     void writeNote(Note note, OutputStream stream);
+
 }

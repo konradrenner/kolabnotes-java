@@ -22,7 +22,7 @@ package org.kore.kolab.notes.event;
  */
 public interface EventSupport {
 
-    void addListener(EventListener listener);
+    void addListener(EventListener... listener);
 
     void firePropertyChange(String uid, EventListener.Type type, String propertyName, Object oldValue, Object newValue);
 }

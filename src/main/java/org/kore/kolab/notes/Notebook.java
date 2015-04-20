@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.kore.kolab.notes.event.EventListener;
 
@@ -51,6 +52,8 @@ public class Notebook extends Note {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         AuditInformation audit = new AuditInformation(now, now);
         Note note = new Note(identification, audit, Classification.PUBLIC, summary);
+        List<EventListener> eventListener = getEventListener();
+        note.addListener(eventListener.toArray(new EventListener[eventListener.size()]));
         addNote(note);
         return note;
     }

@@ -16,7 +16,15 @@
  */
 package org.kore.kolab.notes.imap;
 
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import kore.awt.datatransfer.DataFlavor;
+import kore.awt.datatransfer.UnsupportedFlavorException;
+import korex.activation.ActivationDataFlavor;
 import korex.activation.DataHandler;
+import org.kore.kolab.notes.KolabNotesParser;
+import org.kore.kolab.notes.Note;
 
 /**
  *
@@ -24,8 +32,64 @@ import korex.activation.DataHandler;
  */
 public class IMAPNoteDataHandler extends DataHandler {
 
-    public IMAPNoteDataHandler(Object o, String string) {
-        super(o, string);
+    private static final ActivationDataFlavor myDF = new ActivationDataFlavor(
+            Note.class,
+            "APPLICATION/VND.KOLAB+XML",
+            "Kolab Note");
+
+    /**
+     * An OuputStream wrapper that doesn't close the underlying stream.
+     */
+    private static class NoCloseOutputStream extends FilterOutputStream {
+
+        public NoCloseOutputStream(OutputStream os) {
+            super(os);
+        }
+
+        @Override
+        public void close() {
+            // do nothing
+        }
     }
 
+    private final KolabNotesParser parser;
+
+    public IMAPNoteDataHandler(Object obj, String mimeType, KolabNotesParser parser) {
+        super(obj, mimeType);
+        this.parser = parser;
+    }
+
+    /**
+     * Return the DataFlavors for this <code>DataContentHandler</code>.
+     *
+     * @return The DataFlavors
+     */
+    @Override
+    public DataFlavor[] getTransferDataFlavors() {
+        return new DataFlavor[]{myDF};
+    }
+
+    @Override
+    public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+        if (isDataFlavorSupported(flavor)) {
+            return getContent();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean isDataFlavorSupported(DataFlavor flavor) {
+        return myDF.equals(flavor);
+    }
+
+    @Override
+    public void writeTo(OutputStream os) throws IOException {
+        parser.writeNote((Note) getContent(), os);
+    }
+
+    @Override
+    public String getContentType() {
+        return "APPLICATION/VND.KOLAB+XML";
+    }
 }

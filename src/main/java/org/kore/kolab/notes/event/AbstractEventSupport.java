@@ -17,6 +17,8 @@
 package org.kore.kolab.notes.event;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,8 +30,8 @@ public class AbstractEventSupport implements EventSupport {
     private final List<EventListener> listener = new ArrayList<EventListener>();
 
     @Override
-    public void addListener(EventListener listener) {
-        this.listener.add(listener);
+    public void addListener(EventListener... listener) {
+        this.listener.addAll(Arrays.asList(listener));
     }
 
     @Override
@@ -39,4 +41,7 @@ public class AbstractEventSupport implements EventSupport {
         }
     }
 
+    public List<EventListener> getEventListener() {
+        return Collections.unmodifiableList(listener);
+    }
 }

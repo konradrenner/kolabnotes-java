@@ -6,8 +6,10 @@
 package org.kore.kolab.notes.imap;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
 import korex.mail.BodyPart;
@@ -69,7 +71,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Folder rFolder = store.getFolder(rootfolder);
             initNotesFromFolder(rFolder);
 
-            Folder[] allFolders = rFolder.list("*");
+            Folder[] allFolders = rFolder.list("Kolabnotes");
 
             for (Folder folder : allFolders) {
                 initNotesFromFolder(folder);
@@ -135,36 +137,44 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                     if (deletedNotes != null) {
                         notes.addAll(deletedNotes.values());
                     }
+                    ArrayList<Message> messagesToAdd = new ArrayList<Message>();
                     for (Note note : notes) {
                         Message[] messages = folder.getMessages();
 
                         event = getEvent(note.getIdentification().getUid());
                         if (event == Type.NEW) {
                             MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
-                            message.setHeader("version", "3.0");
+
+                            message.addHeader("From", account.getUsername());
+                            message.addHeader("To", account.getUsername());
+                            message.addHeader("Date", new Date(note.getAuditInformation().getLastModificationDate().getTime()).toString());
+                            message.addHeader("X-Kolab-Type", "application/x-vnd.kolab.note");
+                            message.addHeader("X-Kolab-Mime-Version", "3.0");
+                            message.addHeader("User-Agent", "kolabnotes-java");
+
                             message.setFrom(new InternetAddress(account.getUsername()));
                             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(account.getUsername()));
                             message.setSubject(note.getIdentification().getUid());
-                            // create the message part 
-                            MimeBodyPart content = new MimeBodyPart();
-                            // fill message
-                            content.setText(KOLAB_TEXT);
-                            content.setFileName("kolab.xml");
                             Multipart multipart = new MimeMultipart();
-                            multipart.addBodyPart(content);
+
+                            //Text art
+                            MimeBodyPart textPart = new MimeBodyPart();
+                            textPart.setText(KOLAB_TEXT, "UTF-8");
+                            multipart.addBodyPart(textPart);
+                            
+                            setKolabXML(note, multipart);
 
                             message.setContent(multipart);
-                            setKolabXML(note, multipart);
+                            message.saveChanges();
+                            messagesToAdd.add(message);
                         } else if (event == Type.UPDATE) {
                             Timestamp now = new Timestamp(System.currentTimeMillis());
                             String uid = note.getIdentification().getUid();
-                            Note.Identification id = new Note.Identification(uid, "kolabnotes-java");
-                            Note.AuditInformation audit = new Note.AuditInformation(now, now);
-                            Note newNote = new Note(id, audit, Note.Classification.PUBLIC, note.getSummary());
 
-                            Message message = findMessage(uid, messages);
+                            MimeMessage message = findMessage(uid, messages);
 
                             setKolabXML(note, (Multipart) message.getContent());
+                            message.saveChanges();
                         } else if (event == Type.DELETE) {
                             Message message = findMessage(note.getIdentification().getUid(), messages);
                             if (message != null) {
@@ -173,6 +183,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                             }
                         }
                     }
+                    folder.appendMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
                     folder.close(true);
                 }
             }
@@ -184,27 +195,24 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         }
     }
 
-    void setKolabXML(Note note, Multipart content) throws Exception {
+    void setKolabXML(Note note, Multipart content) throws MessagingException {
         for (int i = 0; i < content.getCount(); i++) {
             BodyPart bodyPart = content.getBodyPart(i);
             if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                bodyPart.setDataHandler(null);
-                bodyPart.setContent(note, "APPLICATION/VND.KOLAB+XML");
+                content.removeBodyPart(i);
             }
         }
+        
+        MimeBodyPart newContent = new MimeBodyPart();
+        newContent.setFileName("kolab.xml");
+        newContent.setDataHandler(new IMAPNoteDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser));
+        content.addBodyPart(newContent, 1);
     }
 
-    Message findMessage(String uid, Message[] messages) throws Exception {
+    MimeMessage findMessage(String uid, Message[] messages) throws Exception {
         for (Message m : messages) {
-            Multipart content = (Multipart) m.getContent();
-            for (int i = 0; i < content.getCount(); i++) {
-                BodyPart bodyPart = content.getBodyPart(i);
-                if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                    Note note = parser.parseNote(bodyPart.getInputStream());
-                    if (uid.equals(note.getIdentification().getUid())) {
-                        return m;
-                    }
-                }
+            if (m.getSubject() != null && m.getSubject().contains(uid)) {
+                return (MimeMessage) m;
             }
         }
         return null;
@@ -239,11 +247,14 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         addNotebook(notebook.getIdentification().getUid(), notebook);
 
         for (Message m : messages) {
+
             Multipart content = (Multipart) m.getContent();
             for (int i = 0; i < content.getCount(); i++) {
                 BodyPart bodyPart = content.getBodyPart(i);
                 if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                    Note note = parser.parseNote(bodyPart.getInputStream());
+                    InputStream inputStream = bodyPart.getInputStream();
+                    Note note = parser.parseNote(inputStream);
+                    inputStream.close();
                     notebook.addNote(note);
                     addNote(note.getIdentification().getUid(), note);
                 }

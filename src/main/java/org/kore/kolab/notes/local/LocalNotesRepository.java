@@ -226,6 +226,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
         Note.AuditInformation audit = new Note.AuditInformation(now, now);
         Notebook notebook = new Notebook(identification, audit, Note.Classification.PUBLIC, summary);
         propertyChanged(uid, EventListener.Type.NEW, "notebook", null, notebook);
+        notebook.addListener(this);
         return notebook;
     }
 
