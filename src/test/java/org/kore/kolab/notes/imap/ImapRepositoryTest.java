@@ -92,14 +92,6 @@ public class ImapRepositoryTest {
         assertEquals("Cool New Book", createNotebook.getSummary());
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
     }
-
-    @Test
-    public void testCreateNote() {
-        Note createNote = imapRepository.createNotebook("NewBookUID", "Cool New Book").createNote("NewNoteUID", "Summary");
-
-        assertEquals("Summary", createNote.getSummary());
-        assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewNoteUID"));
-    }
     
     @Test
     public void testCreateNote() {
