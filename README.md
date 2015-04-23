@@ -8,10 +8,10 @@ AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com
 //First argumet is the desired parser which will be used to parse notes from a storage format into the correct classes
 //Second argument is the account information for the IMAP-Server
 //Third argument is the folder of the IMAP-Server where the notes are stored (this argument is also the ID of the repository)
-NotesRepository repository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
+RemoteNotesRepository remoteRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
 
 //Example for creating are local repository (notes are just stored in the memory)
-repository = new LocalNotesRepository(new KolabNotesParserV3(), "repositoryID");
+Repository repository = new LocalNotesRepository(new KolabNotesParserV3(), "repositoryID");
 
 //Get all notes from the repository
 Collection<Note> notes = repository.getNotes();
@@ -27,6 +27,9 @@ Note note = repository.getNote("NOTE UID");
 
 //Create a note from a notebook
 Note note = notebook.createNote("NewNoteUID", "My Summary");
+
+//Sync the changes back to the server
+remoteRepository.merge();
 
 ```
 
