@@ -59,12 +59,12 @@ public class Notebook extends Note {
     }
     
     public void addNote(Note note) {
-        firePropertyChange(getIdentification().getUid(), EventListener.Type.NEW, "note", null, note);
+        firePropertyChange(note.getIdentification().getUid(), EventListener.Type.NEW, "note", null, note);
         notes.put(note.getIdentification().getUid(), note);
     }
 
     public void deleteNote(String uid) {
-        firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "note", uid, null);
+        firePropertyChange(uid, EventListener.Type.DELETE, "note", uid, null);
         notes.remove(uid);
     }
 
