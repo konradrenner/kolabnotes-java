@@ -5,7 +5,7 @@ Example usage:
 ```java
 
 AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-//First argumet is the desired parser you which will be used to parse notes from a storage format into the correct classes
+//First argumet is the desired parser which will be used to parse notes from a storage format into the correct classes
 //Second argument is the account information for the IMAP-Server
 //Third argument is the folder of the IMAP-Server where the notes are stored (this argument is also the ID of the repository)
 NotesRepository repository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
