@@ -96,6 +96,7 @@ public class ImapRepositoryTest {
     @Test
     public void testCreateNote() {
         Note createNote = imapRepository.createNotebook("NewBookUID", "Cool New Book").createNote("NewNoteUID", "Summary");
+        createNote.addCategories("Work");
 
         assertEquals("Summary", createNote.getSummary());
 		assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
@@ -128,9 +129,9 @@ public class ImapRepositoryTest {
 	assertNull(imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne"));
 	assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
     }
-    
-    @Test
+
     @Ignore
+    @Test
     public void testRemoteChange() {
         imapRepository.refresh();
         Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");

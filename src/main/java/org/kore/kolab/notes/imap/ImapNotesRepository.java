@@ -71,7 +71,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Folder rFolder = store.getFolder(rootfolder);
             initNotesFromFolder(rFolder);
 
-            Folder[] allFolders = rFolder.list("Kolabnotes");
+            Folder[] allFolders = rFolder.list("*");
 
             for (Folder folder : allFolders) {
                 initNotesFromFolder(folder);
@@ -82,6 +82,10 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
 
             store.close();
+
+            eventCache.clear();
+            deletedNotebookCache.clear();
+            deletedNotesCache.clear();
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -189,6 +193,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
             store.close();
         } catch (Exception e) {
+            e.printStackTrace();
             throw new IllegalStateException(e);
         } finally {
             enableChangeListening();
