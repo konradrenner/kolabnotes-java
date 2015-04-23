@@ -45,19 +45,7 @@ public class ImapRepositoryTest {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
         imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
 
-        //createTestdata();
-    }
-
-    @Test
-    public void testChange() {
-        imapRepository.refresh();
-        Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");
-        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
-        createNote.setClassification(Note.Classification.PRIVATE);
-        createNote.setDescription("the description");
-        createNote.addCategories("Work");
-        
-        imapRepository.merge();
+        createTestdata();
     }
 
     @Test
@@ -123,31 +111,44 @@ public class ImapRepositoryTest {
 		assertEquals(createNote, imapRepository.getNote(createNote.getIdentification().getUid()));
     }
 
-	@Test
-	public void testUpdateNote() {
-		Note note = imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne");
-		note.setSummary("Hallo");
+    @Test
+    public void testUpdateNote() {
+	Note note = imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne");
+	note.setSummary("Hallo");
 
-		assertEquals("Hallo", imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne").getSummary());
-		assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
-	}
+	assertEquals("Hallo", imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne").getSummary());
+	assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
+    }
 
-	@Test
-	public void testUpdateNoteLoadedRepository() {
-		Note note = imapRepository.getNote("bookOnenoteOne");
-		note.setSummary("Hallo");
+    @Test
+    public void testUpdateNoteLoadedRepository() {
+	Note note = imapRepository.getNote("bookOnenoteOne");
+	note.setSummary("Hallo");
 
-		assertEquals("Hallo", imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne").getSummary());
-		assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
-	}
+	assertEquals("Hallo", imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne").getSummary());
+	assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
+    }
 
-	@Test
-	public void testDeleteNote() {
-		imapRepository.getNotebook("bookOne").deleteNote("bookOnenoteOne");
+    @Test
+    public void testDeleteNote() {
+	imapRepository.getNotebook("bookOne").deleteNote("bookOnenoteOne");
 
-		assertNull(imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne"));
-		assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
-	}
+	assertNull(imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne"));
+	assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
+    }
+    
+    @Test
+    @Ignore
+    public void testRemoteChange() {
+        imapRepository.refresh();
+        Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");
+        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
+        createNote.setClassification(Note.Classification.PRIVATE);
+        createNote.setDescription("the description");
+        createNote.addCategories("Work");
+        
+        imapRepository.merge();
+    }
 
     @Ignore
     @Test
