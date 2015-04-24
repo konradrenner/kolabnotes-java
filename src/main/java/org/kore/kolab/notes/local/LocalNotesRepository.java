@@ -117,7 +117,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                         } else if ("categories".equalsIgnoreCase(propertyName)) {
                             correctType = EventListener.Type.UPDATE;
                         }
-                        repo.putEvent(uid, correctType);
+                        putEvent(repo, uid, correctType);
                     }
 
                 }, NEW {
@@ -132,7 +132,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                         } else if ("categories".equalsIgnoreCase(propertyName)) {
                             correctType = EventListener.Type.UPDATE;
                         }
-                        repo.putEvent(uid, correctType);
+                        putEvent(repo, uid, correctType);
                     }
 
                 }, UPDATE {
@@ -140,7 +140,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                     @Override
                 public void performChange(LocalNotesRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
                         if (valueChanged(oldValue, newValue)) {
-                            repo.putEvent(uid, type);
+                            putEvent(repo, uid, type);
                         }
                     }
 
@@ -152,6 +152,12 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
             }
 
             return oldValue != null && !oldValue.equals(newValue);
+        }
+        
+        static void putEvent(LocalNotesRepository repo, String uid, Type type) {
+            if (repo.getEvent(uid) == null) {
+                repo.putEvent(uid, type);
+            }
         }
 
         static PropertyChangeStrategy valueOf(Type existingtype, Type newChangeType) {
