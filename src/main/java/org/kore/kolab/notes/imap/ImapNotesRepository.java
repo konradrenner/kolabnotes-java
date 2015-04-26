@@ -149,7 +149,20 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                         Message[] messages = folder.getMessages();
 
                         event = getEvent(note.getIdentification().getUid());
-                        if (event == Type.NEW) {
+
+                        //IMAPMessages are readonly, so in case of update, first delete the old note, then create a new one                        
+                        if (event == Type.UPDATE) {
+                            String uid = note.getIdentification().getUid();
+
+                            MimeMessage message = findMessage(uid, messages);
+
+                            if (message != null) {
+                                Flags deleted = new Flags(Flags.Flag.DELETED);
+                                folder.setFlags(new Message[]{message}, deleted, true);
+                            }
+                        }
+
+                        if (event == Type.NEW || event == Type.UPDATE) {
                             MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
 
                             message.addHeader("From", account.getUsername());
@@ -174,21 +187,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                             message.setContent(multipart);
                             message.saveChanges();
                             messagesToAdd.add(message);
-                        } else if (event == Type.UPDATE) {
-                            Timestamp now = new Timestamp(System.currentTimeMillis());
-                            String uid = note.getIdentification().getUid();
-
-                            MimeMessage message = findMessage(uid, messages);
-
-                            //IMAPMessages are read only
-                            MimeMessage newMessage = new MimeMessage(message);
-
-                            Flags deleted = new Flags(Flags.Flag.DELETED);
-                            folder.setFlags(new Message[]{message}, deleted, true);
-
-                            setKolabXML(note, (Multipart) newMessage.getContent());
-                            newMessage.saveChanges();
-                            messagesToAdd.add(newMessage);
                         } else if (event == Type.DELETE) {
                             Message message = findMessage(note.getIdentification().getUid(), messages);
                             if (message != null) {
