@@ -18,7 +18,6 @@ package org.kore.kolab.notes.imap;
 
 import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -134,11 +133,13 @@ public class ImapRepositoryTest {
     @Test
     public void testRemoteChange() {
         imapRepository.refresh();
-        Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");
-        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
+//        Notebook nb = imapRepository.createNotebook(UUID.randomUUID().toString(), "Testbook");
+        Notebook nb = imapRepository.getNotebookBySummary("Kolabnotes");
+        //Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
+        Note createNote = nb.getNote("727c41fc-ec28-11e4-92d0-525477715fa2");
         createNote.setClassification(Note.Classification.PRIVATE);
         createNote.setDescription("the description");
-        createNote.addCategories("Work");
+        createNote.addCategories("Linux");
         
         imapRepository.merge();
     }
@@ -151,6 +152,7 @@ public class ImapRepositoryTest {
         Collection<Notebook> notebooks = imapRepository.getNotebooks();
 
         System.out.println(notebooks);
+        assertTrue(imapRepository.getTrackedChanges().isEmpty());
         assertFalse(notebooks.isEmpty());
     }
 

@@ -45,6 +45,8 @@ public interface NotesRepository {
 
     Notebook getNotebook(String uid);
 
+    Notebook getNotebookBySummary(String summary);
+
     boolean deleteNotebook(String uid);
 
     Notebook createNotebook(String uid, String summary);

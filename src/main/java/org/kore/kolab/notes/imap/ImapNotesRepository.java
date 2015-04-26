@@ -5,6 +5,7 @@
  */
 package org.kore.kolab.notes.imap;
 
+import com.sun.mail.imap.IMAPFolder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
@@ -108,25 +109,27 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             ArrayList<Notebook> notebooks = new ArrayList<Notebook>(getNotebooks());
             //Deleted notebooks must be merged with the server too (delete from server)
             notebooks.addAll(deletedNotebookCache.values());
+
+            //Get the root folder, so that new folders can be created under it
+            IMAPFolder rootFolder = (IMAPFolder) store.getFolder(rootfolder);
+
             for (Notebook book : notebooks) {
-                Folder folder = store.getFolder(book.getSummary());
+                IMAPFolder folder;
+                if (rootfolder.equals(book.getSummary())) {
+                    folder = rootFolder;
+                } else {
+                    folder = (IMAPFolder) rootFolder.getFolder(book.getSummary());
+                }
 
                 Type event = getEvent(book.getIdentification().getUid());
                 if (event != null) {
-                    if (folder.exists()) {
-                        if (event == Type.DELETE) {
-                            folder.open(Folder.READ_WRITE);
-                            folder.delete(true);
-                        } else if (event == Type.UPDATE) {
-                            folder.renameTo(store.getFolder(book.getSummary()));
-                        }
-
-                    } else {
+                    if (event == Type.DELETE) {
+                        folder.open(Folder.READ_WRITE);
+                        folder.delete(true);
+                    } else if (event == Type.UPDATE) {
+                        folder.renameTo(store.getFolder(book.getSummary()));
+                    } else if (event == Type.NEW) {
                         folder.create(Folder.HOLDS_MESSAGES);
-
-                        if (event == Type.UPDATE || event == Type.NEW) {
-                            folder.renameTo(store.getFolder(book.getSummary()));
-                        }
                     }
                 }
 
@@ -177,8 +180,15 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
                             MimeMessage message = findMessage(uid, messages);
 
-                            setKolabXML(note, (Multipart) message.getContent());
-                            message.saveChanges();
+                            //IMAPMessages are read only
+                            MimeMessage newMessage = new MimeMessage(message);
+
+                            Flags deleted = new Flags(Flags.Flag.DELETED);
+                            folder.setFlags(new Message[]{message}, deleted, true);
+
+                            setKolabXML(note, (Multipart) newMessage.getContent());
+                            newMessage.saveChanges();
+                            messagesToAdd.add(newMessage);
                         } else if (event == Type.DELETE) {
                             Message message = findMessage(note.getIdentification().getUid(), messages);
                             if (message != null) {
@@ -187,7 +197,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                             }
                         }
                     }
-                    folder.appendMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
+                    folder.addMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
                     folder.close(true);
                 }
             }
@@ -201,6 +211,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
 
     void setKolabXML(Note note, Multipart content) throws MessagingException {
+        if (content == null) {
+            return;
+        }
         for (int i = 0; i < content.getCount(); i++) {
             BodyPart bodyPart = content.getBodyPart(i);
             if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {

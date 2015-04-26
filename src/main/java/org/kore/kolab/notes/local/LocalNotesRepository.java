@@ -220,6 +220,17 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     }
 
     @Override
+    public Notebook getNotebookBySummary(String summary) {
+        initCache();
+        for (Notebook nb : notebookCache.values()) {
+            if (summary.equals(nb.getSummary())) {
+                return nb;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public boolean deleteNotebook(String id) {
         propertyChanged(id, EventListener.Type.DELETE, "notebook", id, null);
         return notebookCache.get(id) == null;
