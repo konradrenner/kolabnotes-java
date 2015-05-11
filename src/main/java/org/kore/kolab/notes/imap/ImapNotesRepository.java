@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Properties;
 import korex.mail.BodyPart;
@@ -128,8 +129,10 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                         folder.delete(true);
                     } else if (event == Type.UPDATE) {
                         folder.renameTo(store.getFolder(book.getSummary()));
+                        folder.doCommand(new SetMetadataCommand(folder.getFullName()));
                     } else if (event == Type.NEW) {
                         folder.create(Folder.HOLDS_MESSAGES);
+                        folder.doCommand(new SetMetadataCommand(folder.getFullName()));
                     }
                 }
 
@@ -253,6 +256,17 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
     void initNotesFromFolder(Folder folder) throws MessagingException, IOException {
         folder.open(Folder.READ_ONLY);
+
+        if (folder instanceof IMAPFolder) {
+            GetMetadataCommand metadataCommand = new GetMetadataCommand(folder.getFullName());
+            ((IMAPFolder) folder).doCommand(metadataCommand);
+
+            //Just handle folders which contain notes
+            if (!metadataCommand.isNotesFolder()) {
+                return;
+            }
+        }
+
         Message[] messages = folder.getMessages();
 
         Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -263,6 +277,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         addNotebook(notebook.getIdentification().getUid(), notebook);
 
         for (Message m : messages) {
+
+            Enumeration allHeaders = m.getAllHeaders();
 
             Multipart content = (Multipart) m.getContent();
             for (int i = 0; i < content.getCount(); i++) {
