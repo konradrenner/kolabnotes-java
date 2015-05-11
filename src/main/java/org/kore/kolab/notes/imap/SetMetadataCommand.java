@@ -47,9 +47,6 @@ public class SetMetadataCommand implements IMAPFolder.ProtocolCommand {
         listArguments.writeNString("value.shared");
         listArguments.writeNString("note");
 
-        //listArguments.writeNString("value.priv");
-        //listArguments.writeNString("note");
-
         command.writeArgument(listArguments);
 
         Response[] response = imapp.command("SETANNOTATION", command);

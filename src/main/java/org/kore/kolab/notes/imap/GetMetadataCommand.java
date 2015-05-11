@@ -38,7 +38,6 @@ public class GetMetadataCommand implements IMAPFolder.ProtocolCommand {
     @Override
     public Object doCommand(IMAPProtocol imapp) throws ProtocolException {
         Argument command = new Argument();
-        //command.writeArgument(listOptions);
         command.writeString(folderName);
 
         command.writeNString("/vendor/kolab/folder-type");
@@ -51,6 +50,7 @@ public class GetMetadataCommand implements IMAPFolder.ProtocolCommand {
 
             if (rest.contains("note")) {
                 isNotesFolder = true;
+                break;
             }
         }
 
