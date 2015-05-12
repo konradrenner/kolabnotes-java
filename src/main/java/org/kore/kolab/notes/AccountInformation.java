@@ -29,6 +29,7 @@ public final class AccountInformation implements Serializable {
     private final String host;
     private int port = 993;
     private boolean sslEnabled = true;
+    private boolean folderAnnotationEnabled = true;
 
     private AccountInformation(String host) {
         this.host = host;
@@ -36,14 +37,19 @@ public final class AccountInformation implements Serializable {
 
     /**
      * Starts the creation of Accountinformations for a Kolab-Server. The
-     * default port is 993 and SSL is enabled. The host must be an URL in the
-     * form of http[s]://demo.kolabserver.com
+     * default port is 993, SSL is enabled and support for folder annotation
+     * enabled. The host must be an URL in the form of
+     * http[s]://demo.kolabserver.com
      *
      * @param host
      * @return Username
      */
     public static final Username createForHost(String host) {
         return new AccountInformation(host).new DefaultBuilder();
+    }
+
+    public boolean isFolderAnnotationEnabled() {
+        return folderAnnotationEnabled;
     }
 
     public String getUsername() {
@@ -87,6 +93,8 @@ public final class AccountInformation implements Serializable {
 
         Builder disableSSL();
 
+        Builder disableFolderAnnotation();
+
         Builder port(int port);
     }
 
@@ -100,6 +108,12 @@ public final class AccountInformation implements Serializable {
         @Override
         public Builder disableSSL() {
             AccountInformation.this.sslEnabled = false;
+            return this;
+        }
+
+        @Override
+        public Builder disableFolderAnnotation() {
+            AccountInformation.this.folderAnnotationEnabled = false;
             return this;
         }
 
