@@ -64,7 +64,7 @@ public class Notebook extends Note {
     }
 
     public void deleteNote(String uid) {
-        firePropertyChange(uid, EventListener.Type.DELETE, "note", uid, null);
+        firePropertyChange(uid, EventListener.Type.DELETE, "note", getIdentification().getUid(), null);
         notes.remove(uid);
     }
 

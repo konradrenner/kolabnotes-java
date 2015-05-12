@@ -51,9 +51,9 @@ public class LocalNotesRepositoryTest {
     public void testPropertyChangedDeleteNote() {
         LocalNotesRepository repo = mock(LocalNotesRepository.class);
 
-        LocalNotesRepository.PropertyChangeStrategy.DELETE.performChange(repo, "UID", EventListener.Type.DELETE, "note", "NOTE", null);
+        LocalNotesRepository.PropertyChangeStrategy.DELETE.performChange(repo, "NOTE", EventListener.Type.DELETE, "note", "UID", null);
 
-        verify(repo).putEvent("UID", EventListener.Type.DELETE);
+        verify(repo).putEvent("NOTE", EventListener.Type.DELETE);
         verify(repo).removeFromNotesCache("UID", "NOTE");
         verify(repo, times(0)).removeFromNotebookCache("UID");
     }

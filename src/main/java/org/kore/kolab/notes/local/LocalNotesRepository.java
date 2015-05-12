@@ -113,7 +113,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                                 repo.removeFromNotesCache(uid, note.getIdentification().getUid());
                             }
                         } else if ("note".equalsIgnoreCase(propertyName)) {
-                            repo.removeFromNotesCache(uid, oldValue.toString());
+                            repo.removeFromNotesCache(oldValue.toString(), uid);
                         } else if ("categories".equalsIgnoreCase(propertyName)) {
                             correctType = EventListener.Type.UPDATE;
                         }

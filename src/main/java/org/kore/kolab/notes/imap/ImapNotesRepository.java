@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.Properties;
 import korex.mail.BodyPart;
@@ -82,7 +81,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 initNotesFromFolder(rFolder, fetchProfile);
             }
 
-            Folder[] allFolders = rFolder.list("*");
+            Folder[] allFolders = rFolder.list("Testbook2");
 
             for (Folder folder : allFolders) {
                 folder.open(READ_ONLY);
@@ -141,13 +140,17 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 Type event = getEvent(book.getIdentification().getUid());
                 if (event != null) {
                     if (event == Type.DELETE) {
-                        folder.open(READ_WRITE);
+                        if (!folder.isOpen()) {
+                            folder.open(READ_WRITE);
+                        }
                         folder.delete(true);
+                        continue;
                     } else if (event == Type.NEW || event == Type.UPDATE) {
                         if (event == Type.NEW) {
                             folder.create(Folder.HOLDS_MESSAGES);
                         } else {
-                            folder.renameTo(store.getFolder(book.getSummary()));
+                            //TODO
+                            folder.renameTo(folder);
                         }
 
                         if (account.isFolderAnnotationEnabled()) {
@@ -161,7 +164,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                     if (!folder.isOpen()) {
                         folder.open(READ_WRITE);
                     }
-
                     ArrayList<Note> notes = new ArrayList<Note>(book.getNotes());
                     Map<String, Note> deletedNotes = deletedNotesCache.get(book.getIdentification().getUid());
                     if (deletedNotes != null) {
@@ -304,9 +306,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         addNotebook(notebook.getIdentification().getUid(), notebook);
 
         for (Message m : messages) {
-
-            Enumeration allHeaders = m.getAllHeaders();
-
             Multipart content = (Multipart) m.getContent();
             for (int i = 0; i < content.getCount(); i++) {
                 BodyPart bodyPart = content.getBodyPart(i);
