@@ -81,7 +81,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 initNotesFromFolder(rFolder, fetchProfile);
             }
 
-            Folder[] allFolders = rFolder.list("Testbook2");
+            Folder[] allFolders = rFolder.list("*");
 
             for (Folder folder : allFolders) {
                 folder.open(READ_ONLY);
