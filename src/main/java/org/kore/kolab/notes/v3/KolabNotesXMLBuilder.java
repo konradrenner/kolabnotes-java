@@ -3,8 +3,16 @@
  */
 package org.kore.kolab.notes.v3;
 
-import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import static java.util.Calendar.DAY_OF_MONTH;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
+import static java.util.Calendar.MONTH;
+import static java.util.Calendar.SECOND;
+import static java.util.Calendar.YEAR;
+import java.util.Date;
 import java.util.Set;
+import java.util.TimeZone;
 import javax.xml.parsers.DocumentBuilder;
 import org.kore.kolab.notes.Note;
 import org.w3c.dom.Document;
@@ -47,22 +55,36 @@ public final class KolabNotesXMLBuilder {
     }
 
     public KolabNotesXMLBuilder withAuditInformation(Note.AuditInformation id) {
-        SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat time = new SimpleDateFormat("hh:mm:ss");
-
-        String creation = date.format(id.getCreationDate()) + "T" + time.format(id.getCreationDate()) + "Z";
-        String modification = date.format(id.getLastModificationDate()) + "T"
-                + time.format(id.getLastModificationDate())
-                + "Z";
-
+        String creation = createTimestampString(id.getCreationDate());
         Element element = doc.createElement("creation-date");
         element.appendChild(doc.createTextNode(creation));
         rootElement.appendChild(element);
 
+        String modification = createTimestampString(id.getLastModificationDate());
         element = doc.createElement("last-modification-date");
         element.appendChild(doc.createTextNode(modification));
         rootElement.appendChild(element);
         return this;
+    }
+
+    String createTimestampString(Date date) {
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        calendar.setTime(date);
+
+        StringBuilder sb = new StringBuilder(String.format("%1$04d", calendar.get(YEAR)));
+        sb.append('-');
+        sb.append(String.format("%1$02d", (calendar.get(MONTH) + 1)));
+        sb.append('-');
+        sb.append(String.format("%1$02d", (calendar.get(DAY_OF_MONTH))));
+        sb.append('T');
+        sb.append(String.format("%1$02d", (calendar.get(HOUR_OF_DAY))));
+        sb.append(':');
+        sb.append(String.format("%1$02d", (calendar.get(MINUTE))));
+        sb.append(':');
+        sb.append(String.format("%1$02d", (calendar.get(SECOND))));
+        sb.append('Z');
+
+        return sb.toString();
     }
 
     public KolabNotesXMLBuilder withClassification(Note.Classification classification) {
