@@ -76,11 +76,7 @@ public class KolabNotesHandler
             } else if ("categories".equals(name)) {
                 categories = new LinkedHashSet<String>();
                 if (value != null && value.trim().length() > 0) {
-                    String correctValue = value;
-                    if (value.startsWith("CATEGORIES:")) {
-                        correctValue = value.substring(11);
-                    }
-                    String[] all = correctValue.split(",");
+                    String[] all = value.split(",");
                     categories.addAll(Arrays.asList(all));
                 }
             }
