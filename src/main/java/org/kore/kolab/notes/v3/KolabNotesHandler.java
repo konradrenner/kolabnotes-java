@@ -92,6 +92,9 @@ public class KolabNotesHandler
             Note note = new Note(id, auditInformation, classification, summary);
             note.setDescription(description);
             note.setSummary(summary);
+            if (categories != null) {
+                note.addCategories(categories.toArray(new String[categories.size()]));
+            }
 
             return note;
         }

@@ -30,6 +30,7 @@ public class KolabNotesParserV3Test {
         assertNotNull(note.getAuditInformation().getCreationDate());
         assertNotNull(note.getAuditInformation().getLastModificationDate());
         assertNotNull(note.getIdentification().getUid());
+        assertTrue(note.getCategories().size() == 2);
         assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
         System.out.println(note);
     }
