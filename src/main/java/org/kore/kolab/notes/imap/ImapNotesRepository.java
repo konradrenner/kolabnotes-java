@@ -17,6 +17,8 @@ import korex.mail.BodyPart;
 import korex.mail.FetchProfile;
 import korex.mail.Flags;
 import korex.mail.Folder;
+import static korex.mail.Folder.READ_ONLY;
+import static korex.mail.Folder.READ_WRITE;
 import korex.mail.Message;
 import korex.mail.MessagingException;
 import korex.mail.Multipart;
@@ -73,6 +75,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Folder rFolder = store.getFolder(rootfolder);
             FetchProfile fetchProfile = new FetchProfile();
 
+            rFolder.open(READ_ONLY);
             if (account.isFolderAnnotationEnabled()) {
                 initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile);
             } else {
@@ -82,17 +85,20 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Folder[] allFolders = rFolder.list("*");
 
             for (Folder folder : allFolders) {
+                folder.open(READ_ONLY);
                 if (account.isFolderAnnotationEnabled()) {
-                    initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile);
+                    initNotesFromFolderWithAnnotationCheck(folder, fetchProfile);
                 } else {
-                    initNotesFromFolder(rFolder, fetchProfile);
+                    initNotesFromFolder(folder, fetchProfile);
                 }
                 
                 for (Listener listen : listener) {
                     listen.onSyncUpdate(folder.getFullName());
                 }
+                //folder.close(false);
             }
 
+            //rFolder.close(false);
             store.close();
 
             eventCache.clear();
@@ -135,7 +141,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 Type event = getEvent(book.getIdentification().getUid());
                 if (event != null) {
                     if (event == Type.DELETE) {
-                        folder.open(Folder.READ_WRITE);
+                        folder.open(READ_WRITE);
                         folder.delete(true);
                     } else if (event == Type.NEW || event == Type.UPDATE) {
                         if (event == Type.NEW) {
@@ -153,7 +159,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 //if the folder does not exist, do nothing
                 if (folder.exists()) {
                     if (!folder.isOpen()) {
-                        folder.open(Folder.READ_WRITE);
+                        folder.open(READ_WRITE);
                     }
 
                     ArrayList<Note> notes = new ArrayList<Note>(book.getNotes());
@@ -269,8 +275,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
     
     void initNotesFromFolderWithAnnotationCheck(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
-        folder.open(Folder.READ_ONLY);
-        
         if (folder instanceof IMAPFolder) {
             GetMetadataCommand metadataCommand = new GetMetadataCommand(folder.getFullName());
             ((IMAPFolder) folder).doCommand(metadataCommand);
@@ -285,10 +289,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
 
     void initNotesFromFolder(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
-        if (!folder.isOpen()) {
-            folder.open(Folder.READ_ONLY);
-        }
-
         Message[] messages = folder.getMessages();
 
         fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
