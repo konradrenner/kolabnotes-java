@@ -70,7 +70,7 @@ public class Notebook extends Note {
 
     @Override
     public String toString() {
-        return "Notebook{" + "notes=" + notes + '}';
+        return "Notebook{" + super.toString() + "notes=" + notes + '}';
     }
 
 }
