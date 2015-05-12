@@ -73,12 +73,20 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Folder rFolder = store.getFolder(rootfolder);
             FetchProfile fetchProfile = new FetchProfile();
 
-            initNotesFromFolder(rFolder, fetchProfile);
+            if (account.isFolderAnnotationEnabled()) {
+                initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile);
+            } else {
+                initNotesFromFolder(rFolder, fetchProfile);
+            }
 
-            Folder[] allFolders = rFolder.list("Testbook");
+            Folder[] allFolders = rFolder.list("*");
 
             for (Folder folder : allFolders) {
-                initNotesFromFolder(folder, fetchProfile);
+                if (account.isFolderAnnotationEnabled()) {
+                    initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile);
+                } else {
+                    initNotesFromFolder(rFolder, fetchProfile);
+                }
                 
                 for (Listener listen : listener) {
                     listen.onSyncUpdate(folder.getFullName());
@@ -129,12 +137,16 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                     if (event == Type.DELETE) {
                         folder.open(Folder.READ_WRITE);
                         folder.delete(true);
-                    } else if (event == Type.UPDATE) {
-                        folder.renameTo(store.getFolder(book.getSummary()));
-                        folder.doCommand(new SetMetadataCommand(folder.getFullName()));
-                    } else if (event == Type.NEW) {
-                        folder.create(Folder.HOLDS_MESSAGES);
-                        folder.doCommand(new SetMetadataCommand(folder.getFullName()));
+                    } else if (event == Type.NEW || event == Type.UPDATE) {
+                        if (event == Type.NEW) {
+                            folder.create(Folder.HOLDS_MESSAGES);
+                        } else {
+                            folder.renameTo(store.getFolder(book.getSummary()));
+                        }
+
+                        if (account.isFolderAnnotationEnabled()) {
+                            folder.doCommand(new SetMetadataCommand(folder.getFullName()));
+                        }
                     }
                 }
 
@@ -255,10 +267,10 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     protected void addNote(String uid, Note note) {
         super.addNote(uid, note);
     }
-
-    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
+    
+    void initNotesFromFolderWithAnnotationCheck(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
         folder.open(Folder.READ_ONLY);
-
+        
         if (folder instanceof IMAPFolder) {
             GetMetadataCommand metadataCommand = new GetMetadataCommand(folder.getFullName());
             ((IMAPFolder) folder).doCommand(metadataCommand);
@@ -267,6 +279,14 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             if (!metadataCommand.isNotesFolder()) {
                 return;
             }
+        }
+        
+        initNotesFromFolder(folder, fetchProfile);
+    }
+
+    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
+        if (!folder.isOpen()) {
+            folder.open(Folder.READ_ONLY);
         }
 
         Message[] messages = folder.getMessages();
