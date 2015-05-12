@@ -10,11 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Properties;
 import korex.mail.BodyPart;
+import korex.mail.FetchProfile;
 import korex.mail.Flags;
 import korex.mail.Folder;
 import korex.mail.Message;
@@ -71,12 +71,14 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
 
             Folder rFolder = store.getFolder(rootfolder);
-            initNotesFromFolder(rFolder);
+            FetchProfile fetchProfile = new FetchProfile();
 
-            Folder[] allFolders = rFolder.list("*");
+            initNotesFromFolder(rFolder, fetchProfile);
+
+            Folder[] allFolders = rFolder.list("Testbook");
 
             for (Folder folder : allFolders) {
-                initNotesFromFolder(folder);
+                initNotesFromFolder(folder, fetchProfile);
                 
                 for (Listener listen : listener) {
                     listen.onSyncUpdate(folder.getFullName());
@@ -168,16 +170,15 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                         if (event == Type.NEW || event == Type.UPDATE) {
                             MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
 
-                            message.addHeader("From", account.getUsername());
-                            message.addHeader("To", account.getUsername());
-                            message.addHeader("Date", new Date(note.getAuditInformation().getLastModificationDate().getTime()).toString());
-                            message.addHeader("X-Kolab-Type", "application/x-vnd.kolab.note");
-                            message.addHeader("X-Kolab-Mime-Version", "3.0");
-                            message.addHeader("User-Agent", "kolabnotes-java");
-
                             message.setFrom(new InternetAddress(account.getUsername()));
                             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(account.getUsername()));
+                            message.setSentDate(note.getAuditInformation().getLastModificationDate());
                             message.setSubject(note.getIdentification().getUid());
+
+                            message.setHeader("X-Kolab-Type", "application/x-vnd.kolab.note");
+                            message.setHeader("X-Kolab-Mime-Version", "3.0");
+                            message.setHeader("User-Agent", "kolabnotes-java");
+
                             Multipart multipart = new MimeMultipart();
 
                             //Text art
@@ -189,6 +190,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
                             message.setContent(multipart);
                             message.saveChanges();
+                            message.setFlag(Flags.Flag.SEEN, true);
                             messagesToAdd.add(message);
                         } else if (event == Type.DELETE) {
                             Message message = findMessage(note.getIdentification().getUid(), messages);
@@ -254,7 +256,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         super.addNote(uid, note);
     }
 
-    void initNotesFromFolder(Folder folder) throws MessagingException, IOException {
+    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
         folder.open(Folder.READ_ONLY);
 
         if (folder instanceof IMAPFolder) {
@@ -268,6 +270,11 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         }
 
         Message[] messages = folder.getMessages();
+
+        fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
+        fetchProfile.add(FetchProfile.Item.FLAGS);
+        fetchProfile.add(FetchProfile.Item.ENVELOPE);
+        folder.fetch(messages, fetchProfile);
 
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Note.Identification id = new Note.Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
