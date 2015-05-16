@@ -7,6 +7,8 @@ import java.util.Calendar;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
+import org.kore.kolab.notes.Color;
+import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Note;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -57,6 +59,7 @@ public class KolabNotesHandler
         private Note.Classification classification;
         private String summary;
         private String description;
+        private Color color;
 
         void setValue(String name, String value) throws ParseException {
             if ("uid".equals(name)) {
@@ -73,6 +76,8 @@ public class KolabNotesHandler
                 summary = value;
             } else if ("description".equals(name)) {
                 description = value;
+            } else if ("color".equals(name)) {
+                color = Colors.getColor(value);
             } else if ("categories".equals(name)) {
                 categories = new LinkedHashSet<String>();
                 if (value != null && value.trim().length() > 0) {
@@ -91,6 +96,7 @@ public class KolabNotesHandler
             if (categories != null) {
                 note.addCategories(categories.toArray(new String[categories.size()]));
             }
+            note.setColor(color);
 
             return note;
         }

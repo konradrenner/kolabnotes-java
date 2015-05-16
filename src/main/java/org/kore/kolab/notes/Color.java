@@ -16,11 +16,60 @@
  */
 package org.kore.kolab.notes;
 
+import java.io.Serializable;
 
 /**
  * @author Konrad Renner
  * 
  */
-public interface Color {
-	// TODO Color not supported at the moment, this interface is kind of a placeholder
+public interface Color extends Serializable {
+
+    /**
+     * Gets the 6 digit hexadecimal rgb web color code.
+     *
+     * @return String
+     */
+    String getHexcode();
+
+    static class DefaultImpl implements Color {
+
+        private final String hexCode;
+
+        public DefaultImpl(String hexCode) {
+            this.hexCode = hexCode;
+        }
+
+        @Override
+        public String getHexcode() {
+            return hexCode;
+        }
+
+        @Override
+        public String toString() {
+            return "DefaultImpl{" + "hexCode=" + hexCode + '}';
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+            hash = 97 * hash + (this.hexCode != null ? this.hexCode.hashCode() : 0);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final DefaultImpl other = (DefaultImpl) obj;
+            if ((this.hexCode == null) ? (other.hexCode != null) : !this.hexCode.equals(other.hexCode)) {
+                return false;
+            }
+            return true;
+        }
+
+    }
 }

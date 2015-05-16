@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
+import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Note;
 
 
@@ -30,6 +31,7 @@ public class KolabNotesParserV3Test {
         assertNotNull(note.getAuditInformation().getCreationDate());
         assertNotNull(note.getAuditInformation().getLastModificationDate());
         assertNotNull(note.getIdentification().getUid());
+        assertTrue(Colors.WHITE.equals(note.getColor()));
         assertTrue(note.getCategories().size() == 2);
         assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
         System.out.println(note);
@@ -44,6 +46,7 @@ public class KolabNotesParserV3Test {
         Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
         note.setDescription("Beschreibung");
         note.addCategories("Hallo", "Servus");
+        note.setColor(Colors.BLACK);
 
         parser.writeNote(note, System.out);
     }

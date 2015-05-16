@@ -60,6 +60,7 @@ public class KolabNotesParserV3
                     .withSummary(note.getSummary())
                     .withDescription(note.getDescription())
                     .withCategories(note.getCategories())
+                    .withColor(note.getColor())
                     .build();
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
