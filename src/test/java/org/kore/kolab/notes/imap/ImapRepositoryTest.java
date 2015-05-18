@@ -17,6 +17,7 @@
 package org.kore.kolab.notes.imap;
 
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -105,11 +106,13 @@ public class ImapRepositoryTest {
 
     @Test
     public void testUpdateNote() {
-	Note note = imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne");
+        Note note = imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne");
+        Timestamp lastModificationDate = note.getAuditInformation().getLastModificationDate();
 	note.setSummary("Hallo");
 
 	assertEquals("Hallo", imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne").getSummary());
-	assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
+        assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent("bookOnenoteOne"));
+        assertTrue(lastModificationDate.before(note.getAuditInformation().getLastModificationDate()));
     }
 
     @Test
@@ -173,7 +176,10 @@ public class ImapRepositoryTest {
     }
 
     void createTestdata() {
-        Timestamp now = new Timestamp(System.currentTimeMillis());
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(System.currentTimeMillis());
+        cal.set(Calendar.YEAR, 2014);
+        Timestamp now = new Timestamp(cal.getTimeInMillis());
         Note.Identification ident = new Note.Identification("bookOne", "kolabnotes-java");
         Note.AuditInformation audit = new Note.AuditInformation(now, now);
         Notebook book = new Notebook(ident, audit, Note.Classification.PUBLIC, "Book One");
@@ -182,6 +188,7 @@ public class ImapRepositoryTest {
         note.setClassification(Note.Classification.CONFIDENTIAL);
         note.addCategories("TEST", "WORK");
         note.addListener(imapRepository);
+        note.getAuditInformation().setLastModificationDate(cal.getTimeInMillis());
         imapRepository.addNote("bookOnenoteOne", note);
         note = book.createNote("bookOnenoteTwo", "Note two");
         imapRepository.addNote("bookOnenoteTwo", note);

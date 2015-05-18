@@ -141,6 +141,13 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                 public void performChange(LocalNotesRepository repo, String uid, Type type, String propertyName, Object oldValue, Object newValue) {
                         if (valueChanged(oldValue, newValue)) {
                             putEvent(repo, uid, type);
+                            Note note = repo.getNote(uid);
+                            
+                            if (note == null) {
+                                note = repo.getNotebook(uid);
+                            }
+                            
+                            note.getAuditInformation().setLastModificationDate(System.currentTimeMillis());
                         }
                     }
 

@@ -276,7 +276,7 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         private static final long serialVersionUID = 1L;
 
         private final Timestamp creationDate;
-        private final Timestamp lastModificationDate;
+        private Timestamp lastModificationDate;
 
         public AuditInformation(Timestamp creationDate, Timestamp lastModificationDate) {
             if (creationDate == null || lastModificationDate == null) {
@@ -292,6 +292,10 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
 
         public Timestamp getLastModificationDate() {
             return new Timestamp(lastModificationDate.getTime());
+        }
+
+        public void setLastModificationDate(long millis) {
+            this.lastModificationDate = new Timestamp(millis);
         }
 
         @Override
