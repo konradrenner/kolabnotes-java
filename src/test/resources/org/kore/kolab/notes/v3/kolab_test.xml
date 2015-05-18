@@ -8,6 +8,8 @@
   <creation-date>2015-02-11T21:18:14Z</creation-date>
 
   <last-modification-date>2015-02-11T20:26:44Z</last-modification-date>
+  
+  <categories>APPOINTMENT,EDUCATION</categories>
 
   <classification>PUBLIC</classification>
 
@@ -15,8 +17,6 @@
 
   <description>Test description,
       a little testing desc</description>
-  
-  <categories>APPOINTMENT,EDUCATION</categories>
 
   <color>#FFFFFF</color>
 

@@ -53,13 +53,14 @@ public class KolabNotesParserV3
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
+            //order of the builder methods is important for validation against schema
             Document document = KolabNotesXMLBuilder.createInstance(docBuilder)
                     .withIdentification(note.getIdentification())
                     .withAuditInformation(note.getAuditInformation())
+                    .withCategories(note.getCategories())
                     .withClassification(note.getClassification())
                     .withSummary(note.getSummary())
                     .withDescription(note.getDescription())
-                    .withCategories(note.getCategories())
                     .withColor(note.getColor())
                     .build();
 
