@@ -60,6 +60,10 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         this.configurationParser = configurationParser;
     }
 
+    public RemoteTags getRemoteTags() {
+        return remoteTags;
+    }
+
     @Override
     public void merge(Map<String, Type> eventTypes, Listener... listener) {
         eventCache.putAll(eventTypes);
