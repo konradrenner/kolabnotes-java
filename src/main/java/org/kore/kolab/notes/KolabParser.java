@@ -24,7 +24,7 @@ import java.io.Serializable;
  * @author Konrad Renner
  * 
  */
-public interface KolabNotesParser extends Serializable {
+public interface KolabParser extends Serializable {
 
     /**
      * Parses a note from an InputStream, this method will not close the
@@ -33,15 +33,15 @@ public interface KolabNotesParser extends Serializable {
      * @param stream
      * @return Note
      */
-    Note parseNote(InputStream stream);
+    Object parse(InputStream stream);
 
     /**
      * Writes a note to an OnputStream, this method will not close the
      * OnputStream!
      *
      * @param stream
-     * @param note
+     * @param toWrite
      */
-    void writeNote(Note note, OutputStream stream);
+    void write(Object toWrite, OutputStream stream);
 
 }

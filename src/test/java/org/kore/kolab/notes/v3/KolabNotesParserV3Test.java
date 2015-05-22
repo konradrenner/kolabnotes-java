@@ -7,8 +7,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
+import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Colors;
+import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
+import org.kore.kolab.notes.Tag;
 
 
 public class KolabNotesParserV3Test {
@@ -23,7 +26,7 @@ public class KolabNotesParserV3Test {
     @Test
     public void testParseNote() {
         InputStream inputStream = getClass().getResourceAsStream("kolab_test.xml");
-        Note note = (Note) parser.parseNote(inputStream);
+        Note note = parser.parse(inputStream);
 
         assertEquals(Note.Classification.PUBLIC, note.getClassification());
         assertEquals("Rich Text", note.getSummary());
@@ -32,23 +35,22 @@ public class KolabNotesParserV3Test {
         assertNotNull(note.getAuditInformation().getLastModificationDate());
         assertNotNull(note.getIdentification().getUid());
         assertTrue(Colors.WHITE.equals(note.getColor()));
-        assertTrue(note.getCategories().size() == 2);
         assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
         System.out.println(note);
     }
 
     @Test
     public void testWriteNote() throws Exception {
-        Note.Identification identification = new Note.Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
-        Note.AuditInformation audit = new Note.AuditInformation(new Timestamp(System.currentTimeMillis()),
+        Identification identification = new Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
+        AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()));
 
         Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
         note.setDescription("Beschreibung");
-        note.addCategories("Hallo", "Servus");
+        note.addCategories(new Tag("Hallo"), new Tag("Servus"));
         note.setColor(Colors.BLACK);
 
-        parser.writeNote(note, System.out);
+        parser.write(note, System.out);
     }
 
 }

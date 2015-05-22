@@ -23,19 +23,19 @@ import kore.awt.datatransfer.DataFlavor;
 import kore.awt.datatransfer.UnsupportedFlavorException;
 import korex.activation.ActivationDataFlavor;
 import korex.activation.DataHandler;
-import org.kore.kolab.notes.KolabNotesParser;
+import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
 
 /**
  *
  * @author Konrad Renner
  */
-public class IMAPNoteDataHandler extends DataHandler {
+public class IMAPKolabDataHandler extends DataHandler {
 
     private static final ActivationDataFlavor myDF = new ActivationDataFlavor(
             Note.class,
             "APPLICATION/VND.KOLAB+XML",
-            "Kolab Note");
+            "Kolab Object");
 
     /**
      * An OuputStream wrapper that doesn't close the underlying stream.
@@ -52,9 +52,9 @@ public class IMAPNoteDataHandler extends DataHandler {
         }
     }
 
-    private final KolabNotesParser parser;
+    private final KolabParser parser;
 
-    public IMAPNoteDataHandler(Object obj, String mimeType, KolabNotesParser parser) {
+    public IMAPKolabDataHandler(Object obj, String mimeType, KolabParser parser) {
         super(obj, mimeType);
         this.parser = parser;
     }
@@ -85,7 +85,7 @@ public class IMAPNoteDataHandler extends DataHandler {
 
     @Override
     public void writeTo(OutputStream os) throws IOException {
-        parser.writeNote((Note) getContent(), os);
+        parser.write(getContent(), os);
     }
 
     @Override

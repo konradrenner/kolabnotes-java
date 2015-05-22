@@ -19,6 +19,7 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -27,9 +28,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
+import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
+import org.kore.kolab.notes.Tag;
 import org.kore.kolab.notes.event.EventListener;
+import org.kore.kolab.notes.v3.KolabConfigurationParserV3;
 import org.kore.kolab.notes.v3.KolabNotesParserV3;
 
 /**
@@ -43,7 +48,7 @@ public class ImapRepositoryTest {
     @Before
     public void setUp() {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes");
+        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
 
         createTestdata();
     }
@@ -96,10 +101,11 @@ public class ImapRepositoryTest {
     @Test
     public void testCreateNote() {
         Note createNote = imapRepository.createNotebook("NewBookUID", "Cool New Book").createNote("NewNoteUID", "Summary");
-        createNote.addCategories("Work");
+        createNote.addCategories(new Tag("Work"));
 
         assertEquals("Summary", createNote.getSummary());
-		assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
+        assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
+        assertEquals(createNote.getCategories().iterator().next(), new Tag("Work"));
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewNoteUID"));
 		assertEquals(createNote, imapRepository.getNote(createNote.getIdentification().getUid()));
     }
@@ -136,11 +142,13 @@ public class ImapRepositoryTest {
     @Test
     public void testRemoteChange() {
         imapRepository.refresh();
-        Notebook nb = imapRepository.getNotebookBySummary("Testbook2");
-        imapRepository.deleteNotebook(nb.getIdentification().getUid());
+        Notebook nb = imapRepository.getNotebookBySummary("Testbook");
+        Note createNote = nb.createNote(UUID.randomUUID().toString(), "kolabnotes-java note");
+        createNote.setDescription("some text");
+        createNote.addCategories(new Tag("Java"));
         //nb.createNote(UUID.randomUUID().toString(), "Testnote2");
         //nb.createNote(UUID.randomUUID().toString(), "Neuer Versuchnotiz").setDescription("Testbeschreibung");
-         //nb.deleteNote("717f5a89-bf9d-44b8-b1d7-2068c5a2a1f6");
+        //nb.deleteNote("717f5a89-bf9d-44b8-b1d7-2068c5a2a1f6");
         //Notebook nb = imapRepository.getNotebookBySummary("Kolabnotes");
 //        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
         //Note createNote = nb.getNote("727c41fc-ec28-11e4-92d0-525477715fa2");
@@ -169,7 +177,7 @@ public class ImapRepositoryTest {
         Notebook createNotebook = imapRepository.createNotebook("Testingbook-UID", "Testbook");
         Note note = createNotebook.createNote("Testingnote-UID", "Testingnote");
         note.setDescription("Beschreibung");
-        note.addCategories("Work", "Family");
+        note.addCategories(new Tag("Work"));
         note.setClassification(Note.Classification.CONFIDENTIAL);
 
         imapRepository.merge();
@@ -180,13 +188,13 @@ public class ImapRepositoryTest {
         cal.setTimeInMillis(System.currentTimeMillis());
         cal.set(Calendar.YEAR, 2014);
         Timestamp now = new Timestamp(cal.getTimeInMillis());
-        Note.Identification ident = new Note.Identification("bookOne", "kolabnotes-java");
-        Note.AuditInformation audit = new Note.AuditInformation(now, now);
+        Identification ident = new Identification("bookOne", "kolabnotes-java");
+        AuditInformation audit = new AuditInformation(now, now);
         Notebook book = new Notebook(ident, audit, Note.Classification.PUBLIC, "Book One");
         Note note = book.createNote("bookOnenoteOne", "Note one");
         note.setDescription("This is note one of book one");
         note.setClassification(Note.Classification.CONFIDENTIAL);
-        note.addCategories("TEST", "WORK");
+        note.addCategories(new Tag("TEST"), new Tag("WORK"));
         note.addListener(imapRepository);
         note.getAuditInformation().setLastModificationDate(cal.getTimeInMillis());
         imapRepository.addNote("bookOnenoteOne", note);
@@ -196,8 +204,8 @@ public class ImapRepositoryTest {
         book.addListener(imapRepository);
         note.addListener(imapRepository);
 
-        ident = new Note.Identification("bookTwo", "kolabnotes-java");
-        audit = new Note.AuditInformation(now, now);
+        ident = new Identification("bookTwo", "kolabnotes-java");
+        audit = new AuditInformation(now, now);
         book = new Notebook(ident, audit, Note.Classification.PRIVATE, "Book Two");
         note = book.createNote("bookTwonoteOne", "Note one");
         imapRepository.addNote("bookTwonoteOne", note);
@@ -205,14 +213,14 @@ public class ImapRepositoryTest {
         book.addListener(imapRepository);
         note.addListener(imapRepository);
 
-        ident = new Note.Identification("bookThree", "kolabnotes-java");
-        audit = new Note.AuditInformation(now, now);
+        ident = new Identification("bookThree", "kolabnotes-java");
+        audit = new AuditInformation(now, now);
         book = new Notebook(ident, audit, Note.Classification.PUBLIC, "Book Three");
         imapRepository.addNotebook("bookThree", book);
         book.addListener(imapRepository);
 
-        ident = new Note.Identification("Notes", "kolabnotes-java");
-        audit = new Note.AuditInformation(now, now);
+        ident = new Identification("Notes", "kolabnotes-java");
+        audit = new AuditInformation(now, now);
         book = new Notebook(ident, audit, Note.Classification.PUBLIC, "Notes");
         imapRepository.addNotebook("Notes", book);
         book.addListener(imapRepository);

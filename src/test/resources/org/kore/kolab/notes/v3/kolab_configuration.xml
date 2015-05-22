@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<configuration xmlns="http://kolab.org" version="3.0">
+
+  <uid>5eb27ef2-fd44-11e4-92b4-5254ea544a7a</uid>
+
+  <prodid>kolabtags-provider</prodid>
+
+  <creation-date>2015-05-19T12:24:52Z</creation-date>
+
+  <last-modification-date>2015-05-19T12:24:52Z</last-modification-date>
+
+  <type>relation</type>
+
+  <name>Android</name>
+
+  <relationType>tag</relationType>
+
+  <priority>0</priority>
+
+  <member>urn:uuid:d4b7853b-63ab-4a28-9e51-94414f817a94</member>
+
+  <member>urn:uuid:36e36957-2b32-4f47-ae63-469118764373</member>
+
+</configuration>

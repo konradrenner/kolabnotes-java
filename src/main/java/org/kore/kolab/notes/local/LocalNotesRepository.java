@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.kore.kolab.notes.KolabNotesParser;
+import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Identification;
+import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
 import org.kore.kolab.notes.NotesRepository;
@@ -39,11 +41,11 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     protected final Map<String, Note> notesCache;
     protected final Map<String, Notebook> deletedNotebookCache;
     protected final Map<String, Map<String, Note>> deletedNotesCache;
-    protected final KolabNotesParser parser;
+    protected final KolabParser parser;
     protected final String rootfolder;
     private boolean disableChangeListening = false;
 
-    public LocalNotesRepository(KolabNotesParser parser, String rootFolder) {
+    public LocalNotesRepository(KolabParser parser, String rootFolder) {
         this.notebookCache = new ConcurrentHashMap<String, Notebook>();
         this.notesCache = new ConcurrentHashMap<String, Note>();
         this.deletedNotebookCache = new ConcurrentHashMap<String, Notebook>();
@@ -245,9 +247,9 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
 
     @Override
     public Notebook createNotebook(String uid, String summary) {
-        Note.Identification identification = new Note.Identification(uid, "kolabnotes-java");
+        Identification identification = new Identification(uid, "kolabnotes-java");
         Timestamp now = new Timestamp(System.currentTimeMillis());
-        Note.AuditInformation audit = new Note.AuditInformation(now, now);
+        AuditInformation audit = new AuditInformation(now, now);
         Notebook notebook = new Notebook(identification, audit, Note.Classification.PUBLIC, summary);
         propertyChanged(uid, EventListener.Type.NEW, "notebook", null, notebook);
         notebook.addListener(this);
@@ -302,7 +304,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     }
 
     @Override
-    public KolabNotesParser getNotesParser() {
+    public KolabParser getNotesParser() {
         return this.parser;
     }
 

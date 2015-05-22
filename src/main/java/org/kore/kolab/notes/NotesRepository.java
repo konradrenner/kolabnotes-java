@@ -53,7 +53,7 @@ public interface NotesRepository {
 
     String getRootFolder();
 
-    KolabNotesParser getNotesParser();
+    KolabParser getNotesParser();
 
     /**
      * Tracks existing notebooks, e.g. from another Repository. This method can

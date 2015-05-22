@@ -12,6 +12,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import korex.activation.DataHandler;
 import korex.mail.BodyPart;
 import korex.mail.FetchProfile;
 import korex.mail.Flags;
@@ -28,10 +30,13 @@ import korex.mail.internet.MimeBodyPart;
 import korex.mail.internet.MimeMessage;
 import korex.mail.internet.MimeMultipart;
 import org.kore.kolab.notes.AccountInformation;
-import org.kore.kolab.notes.KolabNotesParser;
+import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Identification;
+import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
 import org.kore.kolab.notes.RemoteNotesRepository;
+import org.kore.kolab.notes.Tag;
 import org.kore.kolab.notes.local.LocalNotesRepository;
 
 /**
@@ -40,16 +45,19 @@ import org.kore.kolab.notes.local.LocalNotesRepository;
  */
 public class ImapNotesRepository extends LocalNotesRepository implements RemoteNotesRepository {
 
-    private final static String KOLAB_TEXT = "This is a Kolab Groupware object.\n"
+    final static String KOLAB_TEXT = "This is a Kolab Groupware object.\n"
             + "To view this object you will need a Kolab Groupware Client.\n"
             + "For a list of Kolab Groupware Clients please visit:\n"
             + "http://www.kolab.org/get-kolab";
 
     private final AccountInformation account;
+    private final KolabParser configurationParser;
+    private RemoteTags remoteTags;
 
-    public ImapNotesRepository(KolabNotesParser parser, AccountInformation account, String rootFolder) {
+    public ImapNotesRepository(KolabParser parser, AccountInformation account, String rootFolder, KolabParser configurationParser) {
         super(parser, rootFolder);
         this.account = account;
+        this.configurationParser = configurationParser;
     }
 
     @Override
@@ -65,11 +73,19 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         try {
             Properties props = new Properties();
 
+            //TODO refactor with an ssl trust store
+            if (account.isSSLEnabled()) {
+                props.put("mail.imaps.ssl.trust", "*");
+            }
+
             Session session = Session.getInstance(props, null);
 
             Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
 
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+
+            remoteTags = new RemoteTags(configurationParser, account);
+            remoteTags.init(store);
 
             Folder rFolder = store.getFolder(rootfolder);
             FetchProfile fetchProfile = new FetchProfile();
@@ -81,7 +97,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 initNotesFromFolder(rFolder, fetchProfile);
             }
 
-            Folder[] allFolders = rFolder.list("*");
+            Folder[] allFolders = rFolder.list("Testbook");
 
             for (Folder folder : allFolders) {
                 folder.open(READ_ONLY);
@@ -104,6 +120,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             deletedNotebookCache.clear();
             deletedNotesCache.clear();
         } catch (Exception e) {
+            System.out.println(e);
             throw new IllegalStateException(e);
         }
     }
@@ -115,11 +132,21 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         try {
             Properties props = new Properties();
 
+            //TODO refactor with an ssl trust store
+            if (account.isSSLEnabled()) {
+                props.put("mail.imaps.ssl.trust", "*");
+            }
+
             Session session = Session.getInstance(props, null);
 
             Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
 
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+
+            if (remoteTags == null) {
+                remoteTags = new RemoteTags(configurationParser, account);
+            }
+            remoteTags.init(store);
 
             //Actual there are no notebooks in notebooks supported
             ArrayList<Notebook> notebooks = new ArrayList<Notebook>(getNotebooks());
@@ -128,6 +155,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
             //Get the root folder, so that new folders can be created under it
             IMAPFolder rootFolder = (IMAPFolder) store.getFolder(rootfolder);
+
+            Flags deleted = new Flags(Flags.Flag.DELETED);
+
 
             for (Notebook book : notebooks) {
                 IMAPFolder folder;
@@ -182,58 +212,74 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                             MimeMessage message = findMessage(uid, messages);
 
                             if (message != null) {
-                                Flags deleted = new Flags(Flags.Flag.DELETED);
                                 folder.setFlags(new Message[]{message}, deleted, true);
                             }
                         }
 
                         if (event == Type.NEW || event == Type.UPDATE) {
-                            MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
 
-                            message.setFrom(new InternetAddress(account.getUsername()));
-                            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(account.getUsername()));
-                            message.setSentDate(note.getAuditInformation().getLastModificationDate());
-                            message.setSubject(note.getIdentification().getUid());
-
-                            message.setHeader("X-Kolab-Type", "application/x-vnd.kolab.note");
-                            message.setHeader("X-Kolab-Mime-Version", "3.0");
-                            message.setHeader("User-Agent", "kolabnotes-java");
-
-                            Multipart multipart = new MimeMultipart();
-
-                            //Text art
-                            MimeBodyPart textPart = new MimeBodyPart();
-                            textPart.setText(KOLAB_TEXT, "UTF-8");
-                            multipart.addBodyPart(textPart);
+                            messagesToAdd.add(createMessage(account,
+                                    note.getIdentification(),
+                                    note.getAuditInformation(),
+                                    new IMAPKolabDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser),
+                                    "application/x-vnd.kolab.note"));
                             
-                            setKolabXML(note, multipart);
-
-                            message.setContent(multipart);
-                            message.saveChanges();
-                            message.setFlag(Flags.Flag.SEEN, true);
-                            messagesToAdd.add(message);
+                            String uid = note.getIdentification().getUid();
+                            remoteTags.removeTags(uid);
+                            remoteTags.attachTags(uid, note.getCategories().toArray(new Tag[note.getCategories().size()]));
                         } else if (event == Type.DELETE) {
                             Message message = findMessage(note.getIdentification().getUid(), messages);
                             if (message != null) {
-                                Flags deleted = new Flags(Flags.Flag.DELETED);
                                 folder.setFlags(new Message[]{message}, deleted, true);
                             }
+                            
+                            remoteTags.removeTags(note.getIdentification().getUid());
                         }
                     }
                     folder.addMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
                     folder.close(true);
                 }
             }
+
+            remoteTags.merge();
+
             store.close();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new IllegalStateException(e);
         } finally {
             enableChangeListening();
         }
     }
 
-    void setKolabXML(Note note, Multipart content) throws MessagingException {
+    static Message createMessage(AccountInformation account, Identification ident, AuditInformation audit, DataHandler handler, String type) throws MessagingException {
+        MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
+
+        message.setFrom(new InternetAddress(account.getUsername()));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(account.getUsername()));
+        message.setSentDate(audit.getLastModificationDate());
+        message.setSubject(ident.getUid());
+
+        message.setHeader("X-Kolab-Type", type);
+        message.setHeader("X-Kolab-Mime-Version", "3.0");
+        message.setHeader("User-Agent", "kolabnotes-java");
+
+        Multipart multipart = new MimeMultipart();
+
+        //Text art
+        MimeBodyPart textPart = new MimeBodyPart();
+        textPart.setText(KOLAB_TEXT, "UTF-8");
+        multipart.addBodyPart(textPart);
+
+        setKolabXML(multipart, handler);
+
+        message.setContent(multipart);
+        message.saveChanges();
+        message.setFlag(Flags.Flag.SEEN, true);
+
+        return message;
+    }
+
+    static void setKolabXML(Multipart content, DataHandler handler) throws MessagingException {
         if (content == null) {
             return;
         }
@@ -246,7 +292,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         
         MimeBodyPart newContent = new MimeBodyPart();
         newContent.setFileName("kolab.xml");
-        newContent.setDataHandler(new IMAPNoteDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser));
+        newContent.setDataHandler(handler);
         content.addBodyPart(newContent, 1);
     }
 
@@ -299,8 +345,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         folder.fetch(messages, fetchProfile);
 
         Timestamp now = new Timestamp(System.currentTimeMillis());
-        Note.Identification id = new Note.Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
-        Note.AuditInformation audit = new Note.AuditInformation(now, now);
+        Identification id = new Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
+        AuditInformation audit = new AuditInformation(now, now);
 
         Notebook notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
         addNotebook(notebook.getIdentification().getUid(), notebook);
@@ -311,11 +357,17 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 BodyPart bodyPart = content.getBodyPart(i);
                 if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
                     InputStream inputStream = bodyPart.getInputStream();
-                    Note note = parser.parseNote(inputStream);
+                    Note note = (Note) parser.parse(inputStream);
                     inputStream.close();
                     notebook.addNote(note);
                     addNote(note.getIdentification().getUid(), note);
+                    
+                    Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
+                    for (RemoteTags.TagDetails tag : tagsFromNote) {
+                        note.addCategories(tag.getTag());
+                    }
                 }
+                //TODO get attachments
             }
         }
     }

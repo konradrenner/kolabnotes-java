@@ -17,7 +17,7 @@
 package org.kore.kolab.notes;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.kore.kolab.notes.event.AbstractEventSupport;
@@ -37,7 +37,7 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
 
     private final Identification identification;
     private final AuditInformation auditInformation;
-    private final Set<String> categories;
+    private final Set<Tag> categories;
     private Classification classification;
     private Attachment attachment;
     private String summary;
@@ -53,7 +53,7 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         this.auditInformation = auditInformation;
         this.classification = classification;
         this.summary = summary;
-        this.categories = new LinkedHashSet<String>();
+        this.categories = new LinkedHashSet<Tag>();
     }
 
     @Override
@@ -71,15 +71,15 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
     }
 
 
-    public void addCategories(String... cats) {
-        for (String cat : cats) {
+    public void addCategories(Tag... cats) {
+        for (Tag cat : cats) {
             firePropertyChange(getIdentification().getUid(), EventListener.Type.NEW, "categories", null, cat);
             this.categories.add(cat);
         }
     }
 
-    public void removeCategories(String... cats) {
-        for (String cat : cats) {
+    public void removeCategories(Tag... cats) {
+        for (Tag cat : cats) {
             firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "categories", cat, null);
             this.categories.remove(cat);
         }
@@ -138,8 +138,8 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         return auditInformation;
     }
 
-    public Set<String> getCategories() {
-        return categories;
+    public Set<Tag> getCategories() {
+        return Collections.unmodifiableSet(categories);
     }
 
     @Override
@@ -200,152 +200,5 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         PRIVATE;
     }
 
-    public static class Identification
-            implements Serializable {
 
-        private static final long serialVersionUID = 1L;
-
-        private final String uid;
-        private final String productId;
-
-        public Identification(String uid, String productId) {
-            if (uid == null || productId == null) {
-                throw new IllegalArgumentException("given parameters must not be null");
-            }
-
-            this.uid = uid;
-            this.productId = productId;
-        }
-
-        public String getUid() {
-            return uid;
-        }
-
-        public String getProductId() {
-            return productId;
-        }
-
-        @Override
-        public String toString() {
-            return "Identification [uid=" + uid + ", productId=" + productId + "]";
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((productId == null) ? 0 : productId.hashCode());
-            result = prime * result + ((uid == null) ? 0 : uid.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            Identification other = (Identification) obj;
-            if (productId == null) {
-                if (other.productId != null) {
-                    return false;
-                }
-            } else if (!productId.equals(other.productId)) {
-                return false;
-            }
-            if (uid == null) {
-                if (other.uid != null) {
-                    return false;
-                }
-            } else if (!uid.equals(other.uid)) {
-                return false;
-            }
-            return true;
-        }
-
-    }
-
-    public static class AuditInformation
-            implements Serializable, Comparable<AuditInformation> {
-
-        private static final long serialVersionUID = 1L;
-
-        private final Timestamp creationDate;
-        private Timestamp lastModificationDate;
-
-        public AuditInformation(Timestamp creationDate, Timestamp lastModificationDate) {
-            if (creationDate == null || lastModificationDate == null) {
-                throw new IllegalArgumentException("given parameters must not be null");
-            }
-            this.creationDate = new Timestamp(creationDate.getTime());
-            this.lastModificationDate = new Timestamp(lastModificationDate.getTime());
-        }
-
-        public Timestamp getCreationDate() {
-            return new Timestamp(creationDate.getTime());
-        }
-
-        public Timestamp getLastModificationDate() {
-            return new Timestamp(lastModificationDate.getTime());
-        }
-
-        public void setLastModificationDate(long millis) {
-            this.lastModificationDate = new Timestamp(millis);
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((creationDate == null) ? 0 : creationDate.hashCode());
-            result = prime * result + ((lastModificationDate == null) ? 0 : lastModificationDate.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            AuditInformation other = (AuditInformation) obj;
-            if (creationDate == null) {
-                if (other.creationDate != null) {
-                    return false;
-                }
-            } else if (!creationDate.equals(other.creationDate)) {
-                return false;
-            }
-            if (lastModificationDate == null) {
-                if (other.lastModificationDate != null) {
-                    return false;
-                }
-            } else if (!lastModificationDate.equals(other.lastModificationDate)) {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "Audit [creationDate=" + creationDate + ", lastModificationDate=" + lastModificationDate + "]";
-        }
-
-        @Override
-        public int compareTo(AuditInformation o) {
-            int first = getLastModificationDate().compareTo(o.getLastModificationDate());
-            return first == 0 ? getCreationDate().compareTo(o.getCreationDate()) : first;
-        }
-
-    }
 }

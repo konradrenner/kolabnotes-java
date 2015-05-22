@@ -3,27 +3,27 @@ package org.kore.kolab.notes.v3;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.util.Calendar;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
 import org.kore.kolab.notes.AuditInformation;
-import org.kore.kolab.notes.Color;
-import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
-import org.kore.kolab.notes.Note;
+import org.kore.kolab.notes.Tag;
+import org.kore.kolab.notes.imap.RemoteTags;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 
-public class KolabNotesHandler
+public class KolabConfigurationHandler
 		extends DefaultHandler {
 
-    private final NoteBuilder builder;
+    private final TagDetailBuilder builder;
     private String currentValue = "";
     private StringBuilder completeValue;
 
-    public KolabNotesHandler() {
-        this.builder = new NoteBuilder();
+    public KolabConfigurationHandler() {
+        this.builder = new TagDetailBuilder();
         this.completeValue = new StringBuilder();
     }
 
@@ -45,21 +45,21 @@ public class KolabNotesHandler
         }
     }
 
-    public Note getNote() {
+    public RemoteTags.TagDetails getTag() {
         return builder.build();
     }
 
-    class NoteBuilder {
+    class TagDetailBuilder {
 
         private String uid;
         private String productId;
         private Timestamp creationDate;
         private Timestamp lastModificationDate;
-        private Set<String> categories;
-        private Note.Classification classification;
-        private String summary;
-        private String description;
-        private Color color;
+        private final Set<String> members = new LinkedHashSet<String>();
+        private String name;
+        private String type;
+        private String relationType;
+        private int priority;
 
         void setValue(String name, String value) throws ParseException {
             if ("uid".equals(name)) {
@@ -70,26 +70,35 @@ public class KolabNotesHandler
                 creationDate = convertTimestamp(value);
             } else if ("last-modification-date".equals(name)) {
                 lastModificationDate = convertTimestamp(value);
-            } else if ("classification".equals(name)) {
-                classification = Note.Classification.valueOf(value.toUpperCase());
-            } else if ("summary".equals(name)) {
-                summary = value;
-            } else if ("description".equals(name)) {
-                description = value;
-            } else if ("color".equals(name)) {
-                color = Colors.getColor(value);
-            } 
+            } else if ("priority".equals(name)) {
+                priority = value == null || value.trim().length() == 0 ? 0 : Integer.valueOf(value);
+            } else if ("type".equals(name)) {
+                type = value;
+            } else if ("relationType".equals(name)) {
+                relationType = value;
+            } else if ("name".equals(name)) {
+                this.name = value;
+            } else if ("member".equals(name)) {
+                //remove urn:uuid: at start
+                if (value.startsWith("urn:uuid:")) {
+                    members.add(value.substring(9));
+                } else {
+                    members.add(value);
+                }
+            }
         }
 
-        Note build() {
+        RemoteTags.TagDetails build() {
             Identification id = new Identification(uid, productId);
             AuditInformation auditInformation = new AuditInformation(creationDate, lastModificationDate);
-            Note note = new Note(id, auditInformation, classification, summary);
-            note.setDescription(description);
-            note.setSummary(summary);
-            note.setColor(color);
+            Tag tag = new Tag(name);
+            tag.setPriority(priority);
+            RemoteTags.TagDetails tagdetail = new RemoteTags.TagDetails(id, auditInformation, tag, members);
 
-            return note;
+            if ("tag".equalsIgnoreCase(relationType) && "relation".equalsIgnoreCase(type)) {
+                return tagdetail;
+            }
+            return null;
         }
 
         Timestamp convertTimestamp(String value) throws ParseException {

@@ -15,7 +15,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.kore.kolab.notes.KolabParser;
-import org.kore.kolab.notes.Note;
+import org.kore.kolab.notes.imap.RemoteTags;
 import org.w3c.dom.Document;
 
 /**
@@ -24,21 +24,21 @@ import org.w3c.dom.Document;
  * @author Konrad Renner
  * 
  */
-public class KolabNotesParserV3
+public class KolabConfigurationParserV3
         implements KolabParser, Serializable {
 
     /* (non-Javadoc)
      * @see org.kore.kolabnotes.KolabParser#parse(java.io.InputStream)
      */
     @Override
-    public Note parse(InputStream stream) {
+    public RemoteTags.TagDetails parse(InputStream stream) {
         try {
             SAXParser saxParser = SAXParserFactory.newInstance().newSAXParser();
 
-            KolabNotesHandler handler = new KolabNotesHandler();
+            KolabConfigurationHandler handler = new KolabConfigurationHandler();
             saxParser.parse(stream, handler);
 
-            return handler.getNote();
+            return handler.getTag();
         } catch (Exception e) {
             throw new KolabParseException(e);
         }
@@ -50,18 +50,20 @@ public class KolabNotesParserV3
     @Override
     public void write(Object object, OutputStream stream) {
         try {
-            Note note = (Note) object;
+            RemoteTags.TagDetails details = (RemoteTags.TagDetails) object;
+
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
             //order of the builder methods is important for validation against schema
-            Document document = KolabNotesXMLBuilder.createInstance(docBuilder)
-                    .withIdentification(note.getIdentification())
-                    .withAuditInformation(note.getAuditInformation())
-                    .withClassification(note.getClassification())
-                    .withSummary(note.getSummary())
-                    .withDescription(note.getDescription())
-                    .withColor(note.getColor())
+            Document document = KolabConfigurationXMLBuilder.createInstance(docBuilder)
+                    .withIdentification(details.getIdentification())
+                    .withAuditInformation(details.getAuditInformation())
+                    .withType()
+                    .withName(details.getTag().getName())
+                    .withRelationType()
+                    .withPriority(details.getTag().getPriority())
+                    .withMembers(details.getMembers())
                     .build();
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
