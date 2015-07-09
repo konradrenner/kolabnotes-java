@@ -174,9 +174,6 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 Type event = getEvent(book.getIdentification().getUid());
                 if (event != null) {
                     if (event == Type.DELETE) {
-                        if (!folder.isOpen()) {
-                            folder.open(READ_WRITE);
-                        }
                         folder.delete(true);
                         continue;
                     } else if (event == Type.NEW || event == Type.UPDATE) {

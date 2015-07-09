@@ -1,6 +1,8 @@
 package org.kore.kolab.notes.v3;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -53,4 +55,29 @@ public class KolabNotesParserV3Test {
         parser.write(note, System.out);
     }
 
+    @Test
+    public void testWriteNoteWithInlineImage() throws Exception {
+        Identification identification = new Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
+        AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
+                new Timestamp(System.currentTimeMillis()));
+
+        Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
+        note.addCategories(new Tag("Hallo"), new Tag("Servus"));
+        note.setColor(Colors.BLACK);
+
+        InputStream inputStream = getClass().getResourceAsStream("testdescription.txt");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        StringBuilder sb = new StringBuilder();
+
+        String s;
+        while ((s = reader.readLine()) != null) {
+            sb.append(s);
+        }
+
+        reader.close();
+
+        note.setDescription(sb.toString());
+
+        parser.write(note, System.out);
+    }
 }
