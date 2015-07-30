@@ -5,18 +5,14 @@ package org.kore.kolab.notes.v3;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
-import org.w3c.dom.Document;
 
 /**
  * Parser for Kolab Notes V3 Format
@@ -55,7 +51,7 @@ public class KolabNotesParserV3
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
             //order of the builder methods is important for validation against schema
-            Document document = KolabNotesXMLBuilder.createInstance(docBuilder)
+            String xml = new KolabNotesXMLBuilder()
                     .withIdentification(note.getIdentification())
                     .withAuditInformation(note.getAuditInformation())
                     .withClassification(note.getClassification())
@@ -64,12 +60,10 @@ public class KolabNotesParserV3
                     .withColor(note.getColor())
                     .build();
 
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(document);
-            StreamResult result = new StreamResult(stream);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(stream);
 
-            transformer.transform(source, result);
+            outputStreamWriter.append(xml);
+            outputStreamWriter.close();
         } catch (Exception e) {
             throw new KolabParseException(e);
         }

@@ -11,15 +11,11 @@ import static java.util.Calendar.MONTH;
 import static java.util.Calendar.SECOND;
 import static java.util.Calendar.YEAR;
 import java.util.Date;
-import java.util.Set;
 import java.util.TimeZone;
-import javax.xml.parsers.DocumentBuilder;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Color;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 /**
  * @author Konrad Renner
@@ -27,46 +23,34 @@ import org.w3c.dom.Element;
  */
 public final class KolabNotesXMLBuilder {
 
-    private final Document doc;
-    private final Element rootElement;
+    private final StringBuilder builder;
 
-    public KolabNotesXMLBuilder(Document doc, Element rootElement) {
-        this.doc = doc;
-        this.rootElement = rootElement;
-    }
-
-    public static final KolabNotesXMLBuilder createInstance(DocumentBuilder builder) {
-        Document doc = builder.newDocument();
-        Element root = doc.createElement("note");
-        root.setAttribute("xmlns", "http://kolab.org");
-        root.setAttribute("version", "3.0");
-        doc.appendChild(root);
-
-        return new KolabNotesXMLBuilder(doc, root);
+    public KolabNotesXMLBuilder() {
+        builder = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><note xmlns=\"http://kolab.org\" version=\"3.0\">");
     }
 
 
     public KolabNotesXMLBuilder withIdentification(Identification id) {
-        Element element = doc.createElement("uid");
-        element.appendChild(doc.createTextNode(id.getUid()));
-        rootElement.appendChild(element);
+        builder.append("<uid>");
+        builder.append(id.getUid());
+        builder.append("</uid>");
 
-        element = doc.createElement("prodid");
-        element.appendChild(doc.createTextNode(id.getProductId()));
-        rootElement.appendChild(element);
+        builder.append("<prodid>");
+        builder.append(id.getProductId());
+        builder.append("</prodid>");
         return this;
     }
 
     public KolabNotesXMLBuilder withAuditInformation(AuditInformation id) {
+        builder.append("<creation-date>");
         String creation = createTimestampString(id.getCreationDate());
-        Element element = doc.createElement("creation-date");
-        element.appendChild(doc.createTextNode(creation));
-        rootElement.appendChild(element);
+        builder.append(creation);
+        builder.append("</creation-date>");
 
+        builder.append("<last-modification-date>");
         String modification = createTimestampString(id.getLastModificationDate());
-        element = doc.createElement("last-modification-date");
-        element.appendChild(doc.createTextNode(modification));
-        rootElement.appendChild(element);
+        builder.append(modification);
+        builder.append("</last-modification-date>");
         return this;
     }
 
@@ -91,55 +75,51 @@ public final class KolabNotesXMLBuilder {
     }
 
     public KolabNotesXMLBuilder withClassification(Note.Classification classification) {
-        Element element = doc.createElement("classification");
-        element.appendChild(doc.createTextNode(classification.name()));
-        rootElement.appendChild(element);
+        builder.append("<classification>");
+        builder.append(classification.name());
+        builder.append("</classification>");
 
         return this;
     }
 
     public KolabNotesXMLBuilder withSummary(String summray) {
-        Element element = doc.createElement("summary");
         if (summray != null) {
-            element.appendChild(doc.createTextNode(summray));
+            builder.append("<summary>");
+            builder.append(summray);
+            builder.append("</summary>");
+        } else {
+            builder.append("<summary/>");
         }
-        rootElement.appendChild(element);
         return this;
     }
 
     public KolabNotesXMLBuilder withDescription(String desc) {
-        Element element = doc.createElement("description");
         if (desc != null) {
-            element.appendChild(doc.createTextNode(desc));
+            builder.append("<description>");
+
+            String correct = desc.replaceAll(">", "&gt;");
+            correct = correct.replaceAll("<", "&lt;");
+
+            builder.append(correct);
+            builder.append("</description>");
+        } else {
+            builder.append("<description/>");
         }
-        rootElement.appendChild(element);
         return this;
     }
 
     public KolabNotesXMLBuilder withColor(Color color) {
-        Element element = doc.createElement("color");
         if (color != null) {
-            element.appendChild(doc.createTextNode(color.getHexcode()));
-        }
-        rootElement.appendChild(element);
-        return this;
-    }
-
-    public KolabNotesXMLBuilder withCategories(Set<String> categories) {
-        if (!categories.isEmpty()) {
-            Element element = doc.createElement("categories");
-            StringBuilder sb = new StringBuilder();
-            for (String categorie : categories) {
-                sb.append(categorie);
-                sb.append(',');
-            }
-            element.appendChild(doc.createTextNode(sb.substring(0, sb.length() - 1)));
-            rootElement.appendChild(element);
+            builder.append("<color>");
+            builder.append(color.getHexcode());
+            builder.append("</color>");
+        } else {
+            builder.append("<color/>");
         }
         return this;
     }
 
-    public Document build() {
-        return doc;
+    public String build() {
+        return builder.append("</note>").toString();
     }
 }
