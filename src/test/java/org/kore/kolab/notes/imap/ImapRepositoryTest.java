@@ -137,6 +137,7 @@ public class ImapRepositoryTest {
 	assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
     }
 
+    @Ignore
     @Test
     public void testRemoteChange() {
         try {
