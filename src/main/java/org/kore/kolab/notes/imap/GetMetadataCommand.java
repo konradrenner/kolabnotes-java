@@ -21,6 +21,7 @@ import com.sun.mail.iap.ProtocolException;
 import com.sun.mail.iap.Response;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.protocol.IMAPProtocol;
+import java.io.UnsupportedEncodingException;
 
 /**
  *
@@ -38,7 +39,7 @@ public class GetMetadataCommand implements IMAPFolder.ProtocolCommand {
     @Override
     public Object doCommand(IMAPProtocol imapp) throws ProtocolException {
         Argument command = new Argument();
-        command.writeString(folderName);
+        setFolderName(command);
 
         command.writeNString("/vendor/kolab/folder-type");
         command.writeString("*");
@@ -59,5 +60,13 @@ public class GetMetadataCommand implements IMAPFolder.ProtocolCommand {
 
     public boolean isNotesFolder() {
         return isNotesFolder;
+    }
+    
+    void setFolderName(Argument command) {
+        try {
+            command.writeString(folderName, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            command.writeString(folderName);
+        }
     }
 }

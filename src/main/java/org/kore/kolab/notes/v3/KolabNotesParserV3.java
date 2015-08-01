@@ -7,10 +7,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import korex.mail.internet.AsciiOutputStream;
 import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
 
@@ -47,9 +46,6 @@ public class KolabNotesParserV3
     public void write(Object object, OutputStream stream) {
         try {
             Note note = (Note) object;
-            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-
             //order of the builder methods is important for validation against schema
             String xml = new KolabNotesXMLBuilder()
                     .withIdentification(note.getIdentification())
@@ -60,10 +56,14 @@ public class KolabNotesParserV3
                     .withColor(note.getColor())
                     .build();
 
+            if (stream instanceof AsciiOutputStream) {
+                ((AsciiOutputStream) stream).disableBreakOnNonAscii();
+            }
+
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(stream);
 
             outputStreamWriter.append(xml);
-            outputStreamWriter.close();
+            outputStreamWriter.flush();
         } catch (Exception e) {
             throw new KolabParseException(e);
         }

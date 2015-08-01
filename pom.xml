@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.kore.kolab.notes</groupId>
     <artifactId>kolabnotes-java</artifactId>
-    <version>0.6.5</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <repositories>
         <repository>
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>com.github.konradrenner</groupId>
             <artifactId>kore-javamail</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

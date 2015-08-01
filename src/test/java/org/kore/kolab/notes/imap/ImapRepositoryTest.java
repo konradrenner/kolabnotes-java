@@ -47,7 +47,7 @@ public class ImapRepositoryTest {
     @Before
     public void setUp() {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
+        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Testbuch", new KolabConfigurationParserV3());
 
         createTestdata();
     }
@@ -137,26 +137,42 @@ public class ImapRepositoryTest {
 	assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
     }
 
-    @Ignore
     @Test
-    public void testRemoteChange() throws Exception {
-        imapRepository.refresh();
-        //imapRepository.deleteNotebook(imapRepository.getNotebookBySummary("Empty").getIdentification().getUid());
+    public void testRemoteChange() {
+        try {
+            imapRepository.refresh();
 
-        //Notebook nb = imapRepository.getNotebookBySummary("Testbook");
-        //Note createNote = nb.createNote(UUID.randomUUID().toString(), "kolabnotes-java note");
-        //createNote.addCategories(new Tag("Java"));
-        //nb.createNote(UUID.randomUUID().toString(), "Testnote2");
-        //nb.createNote(UUID.randomUUID().toString(), "Neuer Versuchnotiz").setDescription("Testbeschreibung");
-        //nb.deleteNote("717f5a89-bf9d-44b8-b1d7-2068c5a2a1f6");
-        //Notebook nb = imapRepository.getNotebookBySummary("Kolabnotes");
-//        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
-        //Note createNote = nb.getNote("727c41fc-ec28-11e4-92d0-525477715fa2");
-//        createNote.setClassification(Note.Classification.PRIVATE);
-//        createNote.setDescription("the description");
-//        createNote.addCategories("Linux");
-        
-        imapRepository.merge();
+            for (Notebook nb : imapRepository.getNotebooks()) {
+                System.out.println(nb.getSummary());
+
+                for (Note note : nb.getNotes()) {
+                    System.out.println(note.getSummary());
+                }
+            }
+
+            //imapRepository.deleteNotebook(imapRepository.getNotebookBySummary("Empty").getIdentification().getUid());
+
+//            Notebook nb = imapRepository.getNotebookBySummary("Mit alles");
+//            Note createNote = nb.createNote(UUID.randomUUID().toString(), "kolabnotes-java note");
+//            createNote.addCategories(new Tag("Android"));
+//            createNote.addCategories(new Tag("Java"));
+            //nb.createNote(UUID.randomUUID().toString(), "Testnote2");
+            //nb.createNote(UUID.randomUUID().toString(), "Neuer Versuchnotiz").setDescription("Testbeschreibung");
+            //nb.deleteNote("717f5a89-bf9d-44b8-b1d7-2068c5a2a1f6");
+            //Notebook nb = imapRepository.getNotebookBySummary("Kolabnotes");
+            //        Note createNote = nb.createNote(UUID.randomUUID().toString(), "Testnote");
+            //Note createNote = nb.getNote("727c41fc-ec28-11e4-92d0-525477715fa2");
+            //        createNote.setClassification(Note.Classification.PRIVATE);
+            //        createNote.setDescription("the description");
+            //        createNote.addCategories("Linux");
+
+            imapRepository.merge();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (e.getCause() != null) {
+                e.getCause().printStackTrace();
+            }
+        }
     }
 
     @Ignore

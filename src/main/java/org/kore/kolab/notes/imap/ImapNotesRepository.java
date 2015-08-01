@@ -258,7 +258,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         message.setFrom(new InternetAddress(account.getUsername()));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(account.getUsername()));
         message.setSentDate(audit.getLastModificationDate());
-        message.setSubject(ident.getUid());
+        message.setSubject(ident.getUid(), "UTF-8");
 
         message.setHeader("X-Kolab-Type", type);
         message.setHeader("X-Kolab-Mime-Version", "3.0");

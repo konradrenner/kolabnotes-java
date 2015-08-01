@@ -39,7 +39,6 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
     private final AuditInformation auditInformation;
     private final Set<Tag> categories;
     private Classification classification;
-    private Attachment attachment;
     private String summary;
     private String description;
     private Color color;
@@ -92,15 +91,6 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
     public void setClassification(Classification classification) {
         firePropertyChange(getIdentification().getUid(), EventListener.Type.UPDATE, "classification", this.classification, classification);
         this.classification = classification;
-    }
-
-    public Attachment getAttachment() {
-        return attachment;
-    }
-
-    public void setAttachment(Attachment attachment) {
-        firePropertyChange(getIdentification().getUid(), EventListener.Type.UPDATE, "attachment", this.attachment, attachment);
-        this.attachment = attachment;
     }
 
     public String getSummary() {
@@ -181,8 +171,6 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
                 + categories
                 + ", classification="
                 + classification
-                + ", attachment="
-                + attachment
                 + ", summary="
                 + summary
                 + ", description="
