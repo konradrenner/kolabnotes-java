@@ -275,7 +275,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
         message.setContent(multipart);
         message.saveChanges();
-        message.setFlag(Flags.Flag.SEEN, true);
+        //Maybe a problem, details: https://issues.kolab.org/show_bug.cgi?id=5109
+        //message.setFlag(Flags.Flag.SEEN, true);
 
         return message;
     }
