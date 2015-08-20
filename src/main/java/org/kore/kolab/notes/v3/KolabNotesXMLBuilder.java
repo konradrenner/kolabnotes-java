@@ -97,8 +97,7 @@ public final class KolabNotesXMLBuilder {
         if (desc != null) {
             builder.append("<description>");
 
-            String correct = desc.replaceAll(">", "&gt;");
-            correct = correct.replaceAll("<", "&lt;");
+            String correct = desc.replaceAll(">", "&gt;").replaceAll("<", "&lt;").replaceAll("&nbsp;", " ");
 
             builder.append(correct);
             builder.append("</description>");
