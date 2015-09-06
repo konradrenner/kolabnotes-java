@@ -16,6 +16,7 @@
  */
 package org.kore.kolab.notes;
 
+import java.util.Date;
 import java.util.Map;
 import org.kore.kolab.notes.event.EventListener;
 
@@ -31,6 +32,19 @@ public interface RemoteNotesRepository extends NotesRepository {
      * @param listener
      */
     void refresh(Listener... listener);
+
+    /**
+     * This method refreshes the local cache with data from a remote server.
+     * Note: local changes will be discarded! If a note was altered/created
+     * before or on the given modification date, the note will not be filled
+     * with data. So it is possible to load just notes completly (with kolab.xml
+     * parsing) which were altered/created after the given date. The summary of
+     * such notes is "NOT_LOADED".
+     *
+     * @param modificationDate
+     * @param listener
+     */
+    void refresh(Date modificationDate, Listener... listener);
 
     /**
      * Sends tracked changes to the remote server. Note: Changes are just
@@ -51,6 +65,14 @@ public interface RemoteNotesRepository extends NotesRepository {
      * @param listener
      */
     void merge(Map<String, EventListener.Type> eventTypes, Listener... listener);
+
+    /**
+     * Checks if a note is completely loaded from a server, after a refresh
+     *
+     * @param note
+     * @return true if note ist completely loaded from server
+     */
+    boolean noteCompletelyLoaded(Note note);
 
     interface Listener {
 

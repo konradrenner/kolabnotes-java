@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -45,6 +46,7 @@ import org.kore.kolab.notes.local.LocalNotesRepository;
  */
 public class ImapNotesRepository extends LocalNotesRepository implements RemoteNotesRepository {
 
+    final static String NOT_LOADED = "NOT_LOADED";
     final static String KOLAB_TEXT = "This is a Kolab Groupware object.\n"
             + "To view this object you will need a Kolab Groupware Client.\n"
             + "For a list of Kolab Groupware Clients please visit:\n"
@@ -72,6 +74,11 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
     @Override
     public void refresh(Listener... listener) {
+        refresh(null, listener);
+    }
+
+    @Override
+    public void refresh(Date modificationDate, Listener... listener) {
         notesCache.clear();
         notebookCache.clear();
         try {
@@ -96,9 +103,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
             rFolder.open(READ_ONLY);
             if (account.isFolderAnnotationEnabled()) {
-                initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile);
+                initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile, modificationDate);
             } else {
-                initNotesFromFolder(rFolder, fetchProfile);
+                initNotesFromFolder(rFolder, fetchProfile, modificationDate);
             }
 
             Folder[] allFolders = rFolder.list("*");
@@ -106,9 +113,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             for (Folder folder : allFolders) {
                 folder.open(READ_ONLY);
                 if (account.isFolderAnnotationEnabled()) {
-                    initNotesFromFolderWithAnnotationCheck(folder, fetchProfile);
+                    initNotesFromFolderWithAnnotationCheck(folder, fetchProfile, modificationDate);
                 } else {
-                    initNotesFromFolder(folder, fetchProfile);
+                    initNotesFromFolder(folder, fetchProfile, modificationDate);
                 }
                 
                 for (Listener listen : listener) {
@@ -324,7 +331,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         super.addNote(uid, note);
     }
     
-    void initNotesFromFolderWithAnnotationCheck(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
+    void initNotesFromFolderWithAnnotationCheck(Folder folder, FetchProfile fetchProfile, Date parseDate) throws MessagingException, IOException {
         if (folder instanceof IMAPFolder) {
             GetMetadataCommand metadataCommand = new GetMetadataCommand(folder.getFullName());
             ((IMAPFolder) folder).doCommand(metadataCommand);
@@ -335,10 +342,27 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
         }
         
-        initNotesFromFolder(folder, fetchProfile);
+        initNotesFromFolder(folder, fetchProfile, parseDate);
     }
 
-    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile) throws MessagingException, IOException {
+    @Override
+    public boolean noteCompletelyLoaded(Note note) {
+        return !NOT_LOADED.equals(note.getSummary());
+    }
+
+
+    /**
+     * Inits notes from a folder. If the parseDate is given, notes will just be
+     * completly loaded where the sent date is after the parseDate, otherwise,
+     * just empty notes will be created.
+     *
+     * @param folder
+     * @param fetchProfile
+     * @param parseDate
+     * @throws MessagingException
+     * @throws IOException
+     */
+    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate) throws MessagingException, IOException {
         Message[] messages = folder.getMessages();
 
         fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
@@ -354,22 +378,33 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         addNotebook(notebook.getIdentification().getUid(), notebook);
 
         for (Message m : messages) {
+            Date sentDate = m.getSentDate();
+            if (parseDate != null && parseDate.after(sentDate)) {
+                Timestamp tst = new Timestamp(sentDate.getTime());
+                Identification noteLoadedId = new Identification(m.getSubject(), "kolabnotes-java");
+                AuditInformation notLoadedAudit = new AuditInformation(tst, tst);
+                Note note = new Note(noteLoadedId, notLoadedAudit, Note.Classification.PUBLIC, NOT_LOADED);
+
+                notebook.addNote(note);
+                addNote(note.getIdentification().getUid(), note);
+            } else {
+
             Multipart content = (Multipart) m.getContent();
-            for (int i = 0; i < content.getCount(); i++) {
-                BodyPart bodyPart = content.getBodyPart(i);
-                if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                    InputStream inputStream = bodyPart.getInputStream();
-                    Note note = (Note) parser.parse(inputStream);
-                    inputStream.close();
-                    notebook.addNote(note);
-                    addNote(note.getIdentification().getUid(), note);
-                    
-                    Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
-                    for (RemoteTags.TagDetails tag : tagsFromNote) {
-                        note.addCategories(tag.getTag());
+                for (int i = 0; i < content.getCount(); i++) {
+                    BodyPart bodyPart = content.getBodyPart(i);
+                    if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
+                        InputStream inputStream = bodyPart.getInputStream();
+                        Note note = (Note) parser.parse(inputStream);
+                        inputStream.close();
+                        notebook.addNote(note);
+                        addNote(note.getIdentification().getUid(), note);
+
+                        Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
+                        for (RemoteTags.TagDetails tag : tagsFromNote) {
+                            note.addCategories(tag.getTag());
+                        }
                     }
                 }
-                //TODO get attachments
             }
         }
     }

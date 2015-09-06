@@ -141,13 +141,20 @@ public class ImapRepositoryTest {
     @Test
     public void testRemoteChange() {
         try {
-            imapRepository.refresh();
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, 2015);
+            calendar.set(Calendar.MONTH, Calendar.AUGUST);
+            calendar.set(Calendar.DAY_OF_MONTH, 28);
+
+            imapRepository.refresh(calendar.getTime());
 
             for (Notebook nb : imapRepository.getNotebooks()) {
                 System.out.println(nb.getSummary());
 
                 for (Note note : nb.getNotes()) {
-                    System.out.println(note.getSummary());
+                    System.out.println(note.getSummary() + "; completely loaded:" + this.imapRepository.noteCompletelyLoaded(note));
+                    System.out.println(note.getCategories());
                 }
             }
 
@@ -167,7 +174,7 @@ public class ImapRepositoryTest {
             //        createNote.setDescription("the description");
             //        createNote.addCategories("Linux");
 
-            imapRepository.merge();
+            //imapRepository.merge();
         } catch (Exception e) {
             e.printStackTrace();
             if (e.getCause() != null) {
