@@ -67,6 +67,14 @@ public interface RemoteNotesRepository extends NotesRepository {
     void merge(Map<String, EventListener.Type> eventTypes, Listener... listener);
 
     /**
+     * Fills an unloaded note with data from the given one. If the note is not
+     * found, or loaded, nothing will be done
+     *
+     * @param note
+     */
+    void fillUnloadedNote(Note note);
+
+    /**
      * Checks if a note is completely loaded from a server, after a refresh
      *
      * @param note

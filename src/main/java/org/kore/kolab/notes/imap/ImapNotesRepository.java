@@ -259,6 +259,26 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         }
     }
 
+    @Override
+    public void fillUnloadedNote(Note note) {
+        disableChangeListening();
+
+        Note unloaded = notesCache.get(note.getIdentification().getUid());
+
+        if (unloaded != null && NOT_LOADED.equals(unloaded.getSummary())) {
+            unloaded.setClassification(note.getClassification());
+            unloaded.setColor(note.getColor());
+            unloaded.setDescription(note.getDescription());
+            unloaded.setSummary(note.getSummary());
+            unloaded.addCategories(note.getCategories().toArray(new Tag[note.getCategories().size()]));
+            unloaded.getAuditInformation().setLastModificationDate(note.getAuditInformation().getLastModificationDate().getTime());
+            unloaded.getAuditInformation().setCreationDate(note.getAuditInformation().getCreationDate().getTime());
+        }
+
+        enableChangeListening();
+    }
+
+
     static Message createMessage(AccountInformation account, Identification ident, AuditInformation audit, DataHandler handler, String type) throws MessagingException {
         MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
 

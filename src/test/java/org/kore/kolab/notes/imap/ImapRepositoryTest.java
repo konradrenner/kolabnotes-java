@@ -19,9 +19,11 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -135,6 +137,43 @@ public class ImapRepositoryTest {
 
 	assertNull(imapRepository.getNotebook("bookOne").getNote("bookOnenoteOne"));
 	assertEquals(EventListener.Type.DELETE, imapRepository.getEvent("bookOnenoteOne"));
+    }
+
+    @Test
+    public void testFillUnloadedNote() {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(System.currentTimeMillis());
+        cal.set(Calendar.YEAR, 2015);
+        cal.set(Calendar.MONTH, Calendar.SEPTEMBER);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        Timestamp now = new Timestamp(cal.getTimeInMillis());
+        Identification ident = new Identification("bookOne", "kolabnotes-java");
+        AuditInformation audit = new AuditInformation(now, now);
+
+        Note note = new Note(ident, audit, Note.Classification.PUBLIC, ImapNotesRepository.NOT_LOADED);
+        note.addListener(imapRepository);
+        imapRepository.addNote(ident.getUid(), note);
+
+        note = new Note(ident, audit, Note.Classification.PUBLIC, "Hello!!!");
+        note.setDescription("This is note one of book one");
+        note.setClassification(Note.Classification.CONFIDENTIAL);
+        note.addCategories(new Tag("TEST"), new Tag("WORK"));
+
+        imapRepository.fillUnloadedNote(note);
+
+        assertNull(imapRepository.getEvent(note.getIdentification().getUid()));
+        Note filled = imapRepository.getNote(note.getIdentification().getUid());
+        assertThat(filled.getDescription(), is(note.getDescription()));
+        assertThat(filled.getSummary(), is(note.getSummary()));
+        assertThat(filled.getSummary(), is("Hello!!!"));
+        assertThat(filled.getAuditInformation(), is(note.getAuditInformation()));
+        assertThat(filled.getCategories(), is(note.getCategories()));
+        assertThat(filled.getClassification(), is(note.getClassification()));
+        assertThat(filled.getColor(), is(note.getColor()));
+        assertThat(filled.getIdentification(), is(note.getIdentification()));
+
+        filled.setSummary("HAHAHA");
+        assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent(ident.getUid()));
     }
 
     @Ignore

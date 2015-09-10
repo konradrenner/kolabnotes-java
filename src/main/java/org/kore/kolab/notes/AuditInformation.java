@@ -25,7 +25,7 @@ import java.sql.Timestamp;
  */
 public class AuditInformation implements Serializable, Comparable<AuditInformation> {
     private static final long serialVersionUID = 1L;
-    private final Timestamp creationDate;
+    private Timestamp creationDate;
     private Timestamp lastModificationDate;
 
     public AuditInformation(Timestamp creationDate, Timestamp lastModificationDate) {
@@ -46,6 +46,10 @@ public class AuditInformation implements Serializable, Comparable<AuditInformati
 
     public void setLastModificationDate(long millis) {
         this.lastModificationDate = new Timestamp(millis);
+    }
+
+    public void setCreationDate(long millis) {
+        this.creationDate = new Timestamp(millis);
     }
 
     @Override
