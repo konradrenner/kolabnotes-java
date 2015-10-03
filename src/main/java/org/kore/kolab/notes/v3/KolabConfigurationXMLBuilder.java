@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import javax.xml.parsers.DocumentBuilder;
 import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Color;
 import org.kore.kolab.notes.Identification;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -102,6 +103,15 @@ public final class KolabConfigurationXMLBuilder {
             element.appendChild(doc.createTextNode(name));
         }
         rootElement.appendChild(element);
+        return this;
+    }
+
+    public KolabConfigurationXMLBuilder withColor(Color color) {
+        if (color != null) {
+            Element element = doc.createElement("color");
+            element.appendChild(doc.createTextNode(color.getHexcode()));
+            rootElement.appendChild(element);
+        }
         return this;
     }
 

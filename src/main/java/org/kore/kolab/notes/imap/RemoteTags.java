@@ -75,6 +75,18 @@ public class RemoteTags {
         init(null);
         return Collections.unmodifiableSet(remoteTags);
     }
+    
+    public void applyLocalChanges(Tag... tags) {
+        for (Tag tag : tags) {
+            TagDetails detail = tagPerTagname.get(tag.getName());
+            
+            if (detail != null) {
+                detail.getTag().setColor(tag.getColor());
+                detail.getTag().setName(tag.getName());
+                detail.getTag().setPriority(tag.getPriority());
+            }
+        }
+    }
 
     /**
      * Gets all tags from the note with the given uid
@@ -267,7 +279,7 @@ public class RemoteTags {
                     TagDetails fromMessage = getFromMessage(serverTag);
 
                     //If the remote and the local TagDetails contain the same entries, nothing must be done
-                    if (fromMessage.getMembers().equals(detail.getMembers())) {
+                    if (noChange(detail, fromMessage)) {
                         createMessage = false;
                     } else {
                         configFolder.setFlags(new Message[]{serverTag}, deleted, true);
@@ -294,6 +306,18 @@ public class RemoteTags {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    boolean noChange(TagDetails local, TagDetails remote) {
+        boolean noChange = remote.getMembers().equals(local.getMembers()) && remote.getTag().getPriority() == local.getTag().getPriority() && remote.getTag().getName().equals(local.getTag().getName());
+
+        if (remote.getTag().getColor() != null) {
+            noChange = remote.getTag().getColor().equals(local.getTag().getColor());
+        } else if (local.getTag().getColor() != null) {
+            noChange = false;
+        }
+
+        return noChange;
     }
 
     Message searchForRemoteTag(String uid, Message[] messages) throws MessagingException {

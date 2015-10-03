@@ -62,6 +62,7 @@ public class KolabConfigurationParserV3
                     .withType()
                     .withName(details.getTag().getName())
                     .withRelationType()
+                    .withColor(details.getTag().getColor())
                     .withPriority(details.getTag().getPriority())
                     .withMembers(details.getMembers())
                     .build();

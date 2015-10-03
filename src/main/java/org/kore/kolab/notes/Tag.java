@@ -17,6 +17,8 @@
 package org.kore.kolab.notes;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
 
 /**
  *
@@ -24,10 +26,36 @@ import java.io.Serializable;
  */
 public class Tag implements Serializable, Comparable<Tag> {
 
-    private final String name;
+    private final Identification identification;
+    private final AuditInformation auditInformation;
+    private String name;
     private int priority;
+    private Color color;
 
-    public Tag(String name) {
+    public Tag(Identification identification, AuditInformation auditInformation) {
+        this.identification = identification;
+        this.auditInformation = auditInformation;
+    }
+
+    public static Tag createNewTag(String name) {
+        Identification identification = new Identification(UUID.randomUUID().toString(), "kolabnotes-java");
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        AuditInformation audit = new AuditInformation(now, now);
+
+        Tag tag = new Tag(identification, audit);
+        tag.setName(name);
+        return tag;
+    }
+
+    public Identification getIdentification() {
+        return identification;
+    }
+
+    public AuditInformation getAuditInformation() {
+        return auditInformation;
+    }
+
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -43,6 +71,15 @@ public class Tag implements Serializable, Comparable<Tag> {
         this.priority = priority;
     }
 
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
+
     @Override
     public int compareTo(Tag o) {
         int compare = priority - o.getPriority();
@@ -54,13 +91,13 @@ public class Tag implements Serializable, Comparable<Tag> {
 
     @Override
     public String toString() {
-        return "Tag{" + "name=" + name + ", priority=" + priority + '}';
+        return "Tag{" + "identification=" + identification + ", auditInformation=" + auditInformation + ", name=" + name + ", priority=" + priority + ", color=" + color + '}';
     }
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 71 * hash + (this.name != null ? this.name.hashCode() : 0);
+        int hash = 5;
+        hash = 23 * hash + (this.name != null ? this.name.hashCode() : 0);
         return hash;
     }
 

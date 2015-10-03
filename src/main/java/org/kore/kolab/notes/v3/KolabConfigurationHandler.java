@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
 import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Tag;
 import org.kore.kolab.notes.imap.RemoteTags;
@@ -60,6 +61,7 @@ public class KolabConfigurationHandler
         private String type;
         private String relationType;
         private int priority;
+        private String color;
 
         void setValue(String name, String value) throws ParseException {
             if ("uid".equals(name)) {
@@ -78,6 +80,8 @@ public class KolabConfigurationHandler
                 relationType = value;
             } else if ("name".equals(name)) {
                 this.name = value;
+            } else if ("color".equals(name)) {
+                this.color = value;
             } else if ("member".equals(name)) {
                 //remove urn:uuid: at start
                 if (value.startsWith("urn:uuid:")) {
@@ -91,8 +95,10 @@ public class KolabConfigurationHandler
         RemoteTags.TagDetails build() {
             Identification id = new Identification(uid, productId);
             AuditInformation auditInformation = new AuditInformation(creationDate, lastModificationDate);
-            Tag tag = new Tag(name);
+            Tag tag = new Tag(id, auditInformation);
             tag.setPriority(priority);
+            tag.setName(name);
+            tag.setColor(Colors.getColor(color));
             RemoteTags.TagDetails tagdetail = new RemoteTags.TagDetails(id, auditInformation, tag, members);
 
             if ("tag".equalsIgnoreCase(relationType) && "relation".equalsIgnoreCase(type)) {

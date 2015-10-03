@@ -49,7 +49,7 @@ public class KolabNotesParserV3Test {
 
         Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
         note.setDescription("Beschreibung");
-        note.addCategories(new Tag("Hallo"), new Tag("Servus"));
+        note.addCategories(Tag.createNewTag("Hallo"), Tag.createNewTag("Servus"));
         note.setColor(Colors.BLACK);
 
         parser.write(note, System.out);
@@ -62,7 +62,7 @@ public class KolabNotesParserV3Test {
                 new Timestamp(System.currentTimeMillis()));
 
         Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
-        note.addCategories(new Tag("Hallo"), new Tag("Servus"));
+        note.addCategories(Tag.createNewTag("Hallo"), Tag.createNewTag("Servus"));
         note.setColor(Colors.BLACK);
 
         InputStream inputStream = getClass().getResourceAsStream("testdescription.txt");

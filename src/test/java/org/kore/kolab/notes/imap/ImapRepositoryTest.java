@@ -19,6 +19,7 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Set;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,6 +31,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.AuditInformation;
+import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
@@ -102,11 +104,11 @@ public class ImapRepositoryTest {
     @Test
     public void testCreateNote() {
         Note createNote = imapRepository.createNotebook("NewBookUID", "Cool New Book").createNote("NewNoteUID", "Summary");
-        createNote.addCategories(new Tag("Work"));
+        createNote.addCategories(Tag.createNewTag("Work"));
 
         assertEquals("Summary", createNote.getSummary());
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewBookUID"));
-        assertEquals(createNote.getCategories().iterator().next(), new Tag("Work"));
+        assertEquals(createNote.getCategories().iterator().next(), Tag.createNewTag("Work"));
         assertEquals(EventListener.Type.NEW, imapRepository.getEvent("NewNoteUID"));
 		assertEquals(createNote, imapRepository.getNote(createNote.getIdentification().getUid()));
     }
@@ -157,7 +159,7 @@ public class ImapRepositoryTest {
         note = new Note(ident, audit, Note.Classification.PUBLIC, "Hello!!!");
         note.setDescription("This is note one of book one");
         note.setClassification(Note.Classification.CONFIDENTIAL);
-        note.addCategories(new Tag("TEST"), new Tag("WORK"));
+        note.addCategories(Tag.createNewTag("TEST"), Tag.createNewTag("WORK"));
 
         imapRepository.fillUnloadedNote(note);
 
@@ -182,20 +184,37 @@ public class ImapRepositoryTest {
         try {
 
             Calendar calendar = Calendar.getInstance();
-            calendar.set(Calendar.YEAR, 2015);
+            calendar.set(Calendar.YEAR, 2014);
             calendar.set(Calendar.MONTH, Calendar.AUGUST);
             calendar.set(Calendar.DAY_OF_MONTH, 28);
 
             imapRepository.refresh(calendar.getTime());
 
+            Tag toChange = null;
             for (Notebook nb : imapRepository.getNotebooks()) {
                 System.out.println(nb.getSummary());
 
                 for (Note note : nb.getNotes()) {
+                    Set<Tag> categories = note.getCategories();
                     System.out.println(note.getSummary() + "; completely loaded:" + this.imapRepository.noteCompletelyLoaded(note));
-                    System.out.println(note.getCategories());
+                    System.out.println(categories);
+
+                    for (Tag cat : categories) {
+                        if ("Wichtig".equals(cat.getName())) {
+                            toChange = cat;
+                        }
+                    }
+
+                    note.removeCategories(categories.toArray(new Tag[categories.size()]));
                 }
             }
+
+            toChange.setColor(Colors.RED);
+            toChange.setPriority(2);
+
+            imapRepository.getRemoteTags().applyLocalChanges(toChange);
+
+            imapRepository.getNotebookBySummary("Mit alles").getNotes().iterator().next().addCategories(toChange);
 
             //imapRepository.deleteNotebook(imapRepository.getNotebookBySummary("Empty").getIdentification().getUid());
 
@@ -212,8 +231,7 @@ public class ImapRepositoryTest {
             //        createNote.setClassification(Note.Classification.PRIVATE);
             //        createNote.setDescription("the description");
             //        createNote.addCategories("Linux");
-
-            //imapRepository.merge();
+            imapRepository.merge();
         } catch (Exception e) {
             e.printStackTrace();
             if (e.getCause() != null) {
@@ -240,7 +258,7 @@ public class ImapRepositoryTest {
         Notebook createNotebook = imapRepository.createNotebook("Testingbook-UID", "Testbook");
         Note note = createNotebook.createNote("Testingnote-UID", "Testingnote");
         note.setDescription("Beschreibung");
-        note.addCategories(new Tag("Work"));
+        note.addCategories(Tag.createNewTag("Work"));
         note.setClassification(Note.Classification.CONFIDENTIAL);
 
         imapRepository.merge();
@@ -257,7 +275,7 @@ public class ImapRepositoryTest {
         Note note = book.createNote("bookOnenoteOne", "Note one");
         note.setDescription("This is note one of book one");
         note.setClassification(Note.Classification.CONFIDENTIAL);
-        note.addCategories(new Tag("TEST"), new Tag("WORK"));
+        note.addCategories(Tag.createNewTag("TEST"), Tag.createNewTag("WORK"));
         note.addListener(imapRepository);
         note.getAuditInformation().setLastModificationDate(cal.getTimeInMillis());
         imapRepository.addNote("bookOnenoteOne", note);

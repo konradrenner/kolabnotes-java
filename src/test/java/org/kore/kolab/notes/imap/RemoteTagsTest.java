@@ -56,10 +56,10 @@ public class RemoteTagsTest {
         remoteTags.init(null);
 
         remoteTags.removeTags("d4b7853b-63ab-4a28-9e51-94414f817a94");
-        remoteTags.attachTags("d4b7853b-63ab-4a28-9e51-94414f817a94", new Tag("Android"));
+        remoteTags.attachTags("d4b7853b-63ab-4a28-9e51-94414f817a94", Tag.createNewTag("Android"));
 
         remoteTags.removeTags("36e36957-2b32-4f47-ae63-469118764373");
-        remoteTags.attachTags("36e36957-2b32-4f47-ae63-469118764373", new Tag("Linux"), new Tag("Android"));
+        remoteTags.attachTags("36e36957-2b32-4f47-ae63-469118764373", Tag.createNewTag("Linux"), Tag.createNewTag("Android"));
 
         remoteTags.merge();
     }

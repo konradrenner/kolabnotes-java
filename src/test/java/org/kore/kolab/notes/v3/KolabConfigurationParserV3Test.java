@@ -45,7 +45,7 @@ public class KolabConfigurationParserV3Test {
         AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()));
 
-        Tag tag = new Tag("Work");
+        Tag tag = Tag.createNewTag("Work");
         tag.setPriority(1);
         Set<String> members = new LinkedHashSet<String>();
         members.add("Note1");
