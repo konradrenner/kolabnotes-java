@@ -19,7 +19,6 @@ package org.kore.kolab.notes.imap;
 import com.sun.mail.imap.IMAPFolder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,7 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.UUID;
 import korex.mail.BodyPart;
 import korex.mail.FetchProfile;
 import korex.mail.Flags;
@@ -121,11 +119,8 @@ public class RemoteTags {
             TagDetails actDetail = this.tagPerTagname.get(tag.getName());
             if (actDetail == null) {
                 //create a new tag
-                Identification id = new Identification(UUID.randomUUID().toString(), "kolabnotes-java");
-                Timestamp now = new Timestamp(System.currentTimeMillis());
-                AuditInformation audit = new AuditInformation(now, now);
                 LinkedHashSet<String> member = new LinkedHashSet<String>();
-                actDetail = new TagDetails(id, audit, tag, member);
+                actDetail = new TagDetails(tag.getIdentification(), tag.getAuditInformation(), tag, member);
 
                 this.tagPerTagname.put(tag.getName(), actDetail);
                 if (this.remoteTags == null) {
