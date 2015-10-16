@@ -306,6 +306,10 @@ public class RemoteTags {
     boolean noChange(TagDetails local, TagDetails remote) {
         boolean noChange = remote.getMembers().equals(local.getMembers()) && remote.getTag().getPriority() == local.getTag().getPriority() && remote.getTag().getName().equals(local.getTag().getName());
 
+        if (!noChange) {
+            return false;
+        }
+
         if (remote.getTag().getColor() != null) {
             noChange = remote.getTag().getColor().equals(local.getTag().getColor());
         } else if (local.getTag().getColor() != null) {
