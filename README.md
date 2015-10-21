@@ -33,32 +33,7 @@ remoteRepository.merge();
 
 ```
 
-Get it via jitpack.io
-```gradle
-repositories {
-	    maven {
-	        url "https://jitpack.io"
-	    }
-	}
-...
-
-compile 'com.github.konradrenner:kolabnotes-java:[version]'
-```
-or in Maven:
-
-```xml
-<repository>
-	    <id>jitpack.io</id>
-	    <url>https://jitpack.io</url>
-</repository>
-...
-<dependency> 
-	<groupId>com.github.konradrenner</groupId> 
-	<artifactId>kolabnotes-java</artifactId> 
-	<version>[version]</version> 
-</dependency>
-``` 
-[ ![Download](https://api.bintray.com/packages/konradrenner/maven/kolabnotes-java/images/download.svg) ](https://bintray.com/konradrenner/maven/kolabnotes-java/_latestVersion)
+Get it via Bintray: [ ![Download](https://api.bintray.com/packages/konradrenner/maven/kolabnotes-java/images/download.svg) ](https://bintray.com/konradrenner/maven/kolabnotes-java/_latestVersion)
 
 [![Build Status](https://secure.travis-ci.org/konradrenner/kolabnotes-java.png?branch=master)](http://travis-ci.org/konradrenner/kolabnotes-java)
 
