@@ -33,7 +33,6 @@ remoteRepository.merge();
 
 ```
 
-Get it: 
 <a href="https://jitpack.io/#konradrenner/kolabnotes-java/">
   <img alt="JitPack"
        src="https://img.shields.io/github/release/konradrenner/kolabnotes-java.svg?label=JitPack"/>
