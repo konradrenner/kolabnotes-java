@@ -87,6 +87,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             //TODO refactor with an ssl trust store
             if (account.isSSLEnabled()) {
                 props.put("mail.imaps.ssl.trust", "*");
+                //try to use starttls
+                props.put("mail.imap.starttls.enable", "true");
             }
 
             Session session = Session.getInstance(props, null);
