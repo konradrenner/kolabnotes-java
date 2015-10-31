@@ -33,7 +33,7 @@ remoteRepository.merge();
 
 ```
 
-Get it via Bintray: [ ![Download](https://api.bintray.com/packages/konradrenner/maven/kolabnotes-java/images/download.svg) ](https://bintray.com/konradrenner/maven/kolabnotes-java/_latestVersion)
+Get it: https://img.shields.io/github/release/konradrenner/kolabnotes-java.svg?label=JitPack
 
 [![Build Status](https://secure.travis-ci.org/konradrenner/kolabnotes-java.png?branch=master)](http://travis-ci.org/konradrenner/kolabnotes-java)
 
