@@ -50,8 +50,8 @@ public class ImapRepositoryTest {
 
     @Before
     public void setUp() {
-        AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Testbuch", new KolabConfigurationParserV3());
+        AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").enableSharedFolders().build();
+        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
 
         createTestdata();
     }
@@ -240,11 +240,11 @@ public class ImapRepositoryTest {
         }
     }
 
-    @Ignore
     @Test
     public void testRefresh() {
         //This test could fail, it depends on the server settings and of course on the notes on the server!
         imapRepository.refresh();
+        imapRepository.getRemoteTags();
         Collection<Notebook> notebooks = imapRepository.getNotebooks();
 
         System.out.println(notebooks);

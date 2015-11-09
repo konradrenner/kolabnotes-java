@@ -30,6 +30,7 @@ public final class AccountInformation implements Serializable {
     private int port = 993;
     private boolean sslEnabled = true;
     private boolean folderAnnotationEnabled = true;
+    private boolean sharedFoldersEnabled = false;
 
     private AccountInformation(String host) {
         this.host = host;
@@ -71,11 +72,16 @@ public final class AccountInformation implements Serializable {
     public boolean isSSLEnabled() {
         return sslEnabled;
     }
+    
+    public boolean isSharedFoldersEnabled(){
+        return sharedFoldersEnabled;
+    }
 
     @Override
     public String toString() {
-        return "AccountInformation{" + "username=" + username + ", password=" + password + ", host=" + host + ", port=" + port + ", sslEnabled=" + sslEnabled + '}';
+        return "AccountInformation{" + "username=" + username + ", password=" + password + ", host=" + host + ", port=" + port + ", sslEnabled=" + sslEnabled + ", folderAnnotationEnabled=" + folderAnnotationEnabled + ", sharedFoldersEnabled=" + sharedFoldersEnabled + '}';
     }
+
 
     public interface Username {
 
@@ -94,6 +100,8 @@ public final class AccountInformation implements Serializable {
         Builder disableSSL();
 
         Builder disableFolderAnnotation();
+        
+        Builder enableSharedFolders();
 
         Builder port(int port);
     }
@@ -122,6 +130,13 @@ public final class AccountInformation implements Serializable {
             AccountInformation.this.port = port;
             return this;
         }
+
+        @Override
+        public Builder enableSharedFolders() {
+            AccountInformation.this.sharedFoldersEnabled = true;
+            return this;
+        }
+        
 
         @Override
         public Builder password(String password) {

@@ -73,4 +73,7 @@ public class Notebook extends Note {
         return "Notebook{" + super.toString() + "notes=" + notes + '}';
     }
 
+    public boolean isSharedFromOtherUser(){
+        return false;
+    }
 }

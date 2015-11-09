@@ -37,6 +37,7 @@ import org.kore.kolab.notes.KolabParser;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
 import org.kore.kolab.notes.RemoteNotesRepository;
+import org.kore.kolab.notes.SharedNotebook;
 import org.kore.kolab.notes.Tag;
 import org.kore.kolab.notes.local.LocalNotesRepository;
 
@@ -107,7 +108,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             if (account.isFolderAnnotationEnabled()) {
                 initNotesFromFolderWithAnnotationCheck(rFolder, fetchProfile, modificationDate);
             } else {
-                initNotesFromFolder(rFolder, fetchProfile, modificationDate);
+                initNotesFromFolder(rFolder, fetchProfile, modificationDate,false);
             }
 
             Folder[] allFolders = rFolder.list("*");
@@ -117,7 +118,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 if (account.isFolderAnnotationEnabled()) {
                     initNotesFromFolderWithAnnotationCheck(folder, fetchProfile, modificationDate);
                 } else {
-                    initNotesFromFolder(folder, fetchProfile, modificationDate);
+                    initNotesFromFolder(folder, fetchProfile, modificationDate,false);
                 }
                 
                 for (Listener listen : listener) {
@@ -125,6 +126,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 }
                 //folder.close(false);
             }
+            
+            initSharedFolders(store, fetchProfile, modificationDate, account.isFolderAnnotationEnabled(), listener);
 
             //rFolder.close(false);
             store.close();
@@ -135,6 +138,33 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         } catch (Exception e) {
             System.out.println(e);
             throw new IllegalStateException(e);
+        }
+    }
+    
+    void initSharedFolders(Store store, FetchProfile fetchProfile, Date modificationDate, boolean folderAnnotationEnabled, Listener... listener) throws MessagingException, IOException{
+        if(!folderAnnotationEnabled){
+            //Just Kolab servers are enabled for this feature
+            return;
+        }
+        
+        Folder defaultFolder = store.getDefaultFolder();
+        
+        for(Folder folder : defaultFolder.list("*")){
+            folder.open(READ_ONLY);
+            
+            if (folder instanceof IMAPFolder) {
+                GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());
+                ((IMAPFolder) folder).doCommand(metadataCommand);
+
+                //Just handle folders which contain notes
+                if (metadataCommand.isSharedNotesFolder()) {
+                    initNotesFromFolder(folder, fetchProfile, modificationDate, true);
+
+                    for (Listener listen : listener) {
+                        listen.onSyncUpdate(folder.getFullName());
+                    }
+                }
+            }
         }
     }
 
@@ -364,7 +394,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
         }
         
-        initNotesFromFolder(folder, fetchProfile, parseDate);
+        initNotesFromFolder(folder, fetchProfile, parseDate, false);
     }
 
     @Override
@@ -381,10 +411,11 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
      * @param folder
      * @param fetchProfile
      * @param parseDate
+     * @param sharedFolder
      * @throws MessagingException
      * @throws IOException
      */
-    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate) throws MessagingException, IOException {
+    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate, boolean sharedFolder) throws MessagingException, IOException {
         Message[] messages = folder.getMessages();
 
         fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
@@ -396,7 +427,16 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         Identification id = new Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
         AuditInformation audit = new AuditInformation(now, now);
 
-        Notebook notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
+        Notebook notebook;
+        if(sharedFolder){
+            SharedNotebook nb = new SharedNotebook(id, audit, Note.Classification.PUBLIC, folder.getName());
+            int lastIndexOfSlash = nb.getSummary().lastIndexOf("/");
+            nb.setShortName(nb.getSummary().substring(lastIndexOfSlash+1));
+                    
+            notebook = nb;
+        }else{
+           notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName()); 
+        }
         addNotebook(notebook.getIdentification().getUid(), notebook);
 
         for (Message m : messages) {
