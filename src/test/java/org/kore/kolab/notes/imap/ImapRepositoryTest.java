@@ -19,7 +19,7 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Set;
+import java.util.UUID;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -179,6 +179,7 @@ public class ImapRepositoryTest {
         assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent(ident.getUid()));
     }
 
+    @Ignore
     @Test
     public void testRemoteChange() {
         try {
@@ -189,14 +190,28 @@ public class ImapRepositoryTest {
             calendar.set(Calendar.DAY_OF_MONTH, 28);
 
             imapRepository.refresh(calendar.getTime());
+            
+            Collection<Notebook> notebooks = imapRepository.getNotebooks();
+            for(Notebook book : notebooks){
+                System.out.println(book.getSummary());
+                for(Note note : book.getNotes()){
+                    System.out.println(note.getSummary() + " : "+note.getIdentification().getUid());
+                }
+            }
 
-            imapRepository.getNotebookBySummary("");
-
+            //Notebook nb = imapRepository.getNotebookBySummary("Shared Folders/shared/test_notes");
+            
+            //nb.deleteNote("06e7149b-5db6-4d58-adfd-2d763d4e37ee");
             //imapRepository.deleteNotebook(imapRepository.getNotebookBySummary("Empty").getIdentification().getUid());
-
-//            Notebook nb = imapRepository.getNotebookBySummary("Mit alles");
-//            Note createNote = nb.createNote(UUID.randomUUID().toString(), "kolabnotes-java note");
-//            createNote.addCategories(new Tag("Android"));
+            
+            //imapRepository.getNote("06e7149b-5db6-4d58-adfd-2d763d4e37ee").removeCategories(imapRepository.getRemoteTags().getTag("Android").getTag());
+            //imapRepository.("c5b2050a-d3d5-4cb8-9d98-87fd57cf1ec9");
+            
+//           Note createNote = nb.createNote(UUID.randomUUID().toString(), "kolabnotes-java note");
+//            createNote.addCategories(imapRepository.getRemoteTags().getTag("Android").getTag());
+//            createNote.setColor(Colors.BLUE);
+//            createNote.setDescription("Hello World!!!!");
+//            createNote.setClassification(Note.Classification.CONFIDENTIAL);
 //            createNote.addCategories(new Tag("Java"));
             //nb.createNote(UUID.randomUUID().toString(), "Testnote2");
             //nb.createNote(UUID.randomUUID().toString(), "Neuer Versuchnotiz").setDescription("Testbeschreibung");
@@ -216,6 +231,7 @@ public class ImapRepositoryTest {
         }
     }
 
+    @Ignore
     @Test
     public void testRefresh() {
         //This test could fail, it depends on the server settings and of course on the notes on the server!

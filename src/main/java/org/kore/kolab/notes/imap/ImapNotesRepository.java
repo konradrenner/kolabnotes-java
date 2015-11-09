@@ -196,6 +196,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             //Deleted notebooks must be merged with the server too (delete from server)
             notebooks.addAll(deletedNotebookCache.values());
 
+            //Root of the whole IMAP structure
+            IMAPFolder defaultFolder = (IMAPFolder) store.getDefaultFolder();
+            
             //Get the root folder, so that new folders can be created under it
             IMAPFolder rootFolder = (IMAPFolder) store.getFolder(rootfolder);
 
@@ -206,6 +209,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 IMAPFolder folder;
                 if (rootfolder.equals(book.getSummary())) {
                     folder = rootFolder;
+                } else if(book.isShared()){
+                    folder = (IMAPFolder) defaultFolder.getFolder(book.getSummary());
                 } else {
                     folder = (IMAPFolder) rootFolder.getFolder(book.getSummary());
                 }
