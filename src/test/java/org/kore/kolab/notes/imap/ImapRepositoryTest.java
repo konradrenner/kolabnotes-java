@@ -35,6 +35,7 @@ import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
+import org.kore.kolab.notes.SharedNotebook;
 import org.kore.kolab.notes.Tag;
 import org.kore.kolab.notes.event.EventListener;
 import org.kore.kolab.notes.v3.KolabConfigurationParserV3;
@@ -50,7 +51,7 @@ public class ImapRepositoryTest {
 
     @Before
     public void setUp() {
-        AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").enableSharedFolders().build();
+        AccountInformation info = AccountInformation.createForHost("").username("").password("").enableSharedFolders().build();
         imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
 
         createTestdata();
@@ -178,7 +179,6 @@ public class ImapRepositoryTest {
         assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent(ident.getUid()));
     }
 
-    @Ignore
     @Test
     public void testRemoteChange() {
         try {
@@ -190,31 +190,7 @@ public class ImapRepositoryTest {
 
             imapRepository.refresh(calendar.getTime());
 
-            Tag toChange = null;
-            for (Notebook nb : imapRepository.getNotebooks()) {
-                System.out.println(nb.getSummary());
-
-                for (Note note : nb.getNotes()) {
-                    Set<Tag> categories = note.getCategories();
-                    System.out.println(note.getSummary() + "; completely loaded:" + this.imapRepository.noteCompletelyLoaded(note));
-                    System.out.println(categories);
-
-                    for (Tag cat : categories) {
-                        if ("Wichtig".equals(cat.getName())) {
-                            toChange = cat;
-                        }
-                    }
-
-                    note.removeCategories(categories.toArray(new Tag[categories.size()]));
-                }
-            }
-
-            toChange.setColor(Colors.RED);
-            toChange.setPriority(2);
-
-            imapRepository.getRemoteTags().applyLocalChanges(toChange);
-
-            imapRepository.getNotebookBySummary("Mit alles").getNotes().iterator().next().addCategories(toChange);
+            imapRepository.getNotebookBySummary("");
 
             //imapRepository.deleteNotebook(imapRepository.getNotebookBySummary("Empty").getIdentification().getUid());
 
@@ -247,7 +223,12 @@ public class ImapRepositoryTest {
         imapRepository.getRemoteTags();
         Collection<Notebook> notebooks = imapRepository.getNotebooks();
 
-        System.out.println(notebooks);
+        for(Notebook nb : notebooks){
+            System.out.println(nb.toString());
+            if(nb.isShared()){
+                System.out.println("Shared from:"+((SharedNotebook)nb).getUsername());
+            }
+        }
         assertTrue(imapRepository.getTrackedChanges().isEmpty());
         assertFalse(notebooks.isEmpty());
     }

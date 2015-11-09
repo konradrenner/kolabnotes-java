@@ -429,10 +429,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
         Notebook notebook;
         if(sharedFolder){
-            SharedNotebook nb = new SharedNotebook(id, audit, Note.Classification.PUBLIC, folder.getName());
-            int lastIndexOfSlash = nb.getSummary().lastIndexOf("/");
-            nb.setShortName(nb.getSummary().substring(lastIndexOfSlash+1));
-                    
+            SharedNotebook nb = new SharedNotebook(id, audit, Note.Classification.PUBLIC, folder.getFullName());
             notebook = nb;
         }else{
            notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName()); 

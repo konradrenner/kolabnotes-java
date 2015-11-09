@@ -41,7 +41,34 @@ public class SharedNotebook extends Notebook{
         return "SharedNotebook{"+ super.toString() + "shortName=" + shortName + '}';
     }
     
-    public boolean isSharedFromOtherUser(){
+    @Override
+    public boolean isShared(){
         return true;
+    }
+    
+    /**
+     * If the notebook is shared from another user (no global share) the username is returned.
+     * Otherwise null is returned
+     * 
+     * @return String
+     */
+    public String getUsername(){
+        if(isGlobalShared()){
+            return null;
+        }
+        
+        String summary = getSummary();
+        int indexOfFirstSlash = summary.indexOf("/");
+        int indexOfSecondSlash = summary.indexOf("/", indexOfFirstSlash+1);
+        return summary.substring(indexOfFirstSlash+1,indexOfSecondSlash);
+    }
+    
+    /**
+     * Returns true, if the notebook is a global share
+     * 
+     * @return boolean
+     */
+    public boolean isGlobalShared(){
+        return getSummary().startsWith("Shared Folders");
     }
 }

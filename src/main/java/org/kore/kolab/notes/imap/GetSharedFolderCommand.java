@@ -39,7 +39,7 @@ public class GetSharedFolderCommand implements IMAPFolder.ProtocolCommand {
     @Override
     public Object doCommand(IMAPProtocol imapp) throws ProtocolException {
         //shared folders containing /, which are forbidden for "normal" folders
-        if(this.folderName.contains("/")){
+        if(this.folderName.startsWith("Other Users") || this.folderName.startsWith("Shared Folders")){
             Argument command = new Argument();
             setFolderName(command);
 
