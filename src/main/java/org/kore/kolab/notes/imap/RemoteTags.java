@@ -154,10 +154,11 @@ public class RemoteTags {
     Store connect(Store store) throws MessagingException {
         if (store == null) {
             store = ImapNotesRepository.openConnection(account);
-        } else if (store.isConnected()) {
-            return store;
         }
-        store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+
+        if (!store.isConnected()) {
+            store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+        }
         return store;
     }
 
