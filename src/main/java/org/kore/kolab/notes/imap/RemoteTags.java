@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import korex.mail.BodyPart;
 import korex.mail.FetchProfile;
@@ -34,7 +33,6 @@ import korex.mail.Folder;
 import korex.mail.Message;
 import korex.mail.MessagingException;
 import korex.mail.Multipart;
-import korex.mail.Session;
 import korex.mail.Store;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.AuditInformation;
@@ -155,16 +153,7 @@ public class RemoteTags {
 
     Store connect(Store store) throws MessagingException {
         if (store == null) {
-            Properties props = new Properties();
-
-            //TODO refactor with an ssl trust store
-            if (account.isSSLEnabled()) {
-                props.put("mail.imaps.ssl.trust", "*");
-            }
-
-            Session session = Session.getInstance(props, null);
-
-            store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
+            store = ImapNotesRepository.openConnection(account);
         } else if (store.isConnected()) {
             return store;
         }

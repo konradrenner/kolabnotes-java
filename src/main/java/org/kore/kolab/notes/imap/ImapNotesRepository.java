@@ -24,6 +24,7 @@ import static korex.mail.Folder.READ_WRITE;
 import korex.mail.Message;
 import korex.mail.MessagingException;
 import korex.mail.Multipart;
+import korex.mail.NoSuchProviderException;
 import korex.mail.Session;
 import korex.mail.Store;
 import korex.mail.internet.InternetAddress;
@@ -83,20 +84,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         notesCache.clear();
         notebookCache.clear();
         try {
-            Properties props = new Properties();
-
-            //TODO refactor with an ssl trust store
-            if (account.isSSLEnabled()) {
-                props.put("mail.imaps.ssl.trust", "*");
-                //try to use starttls
-                props.put("mail.imap.starttls.enable", "true");
-            }
-
-            Session session = Session.getInstance(props, null);
-
-            Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
-
-            store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
+            Store store = openConnection(account);
 
             remoteTags = new RemoteTags(configurationParser, account);
             remoteTags.init(store);
@@ -140,6 +128,35 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             throw new IllegalStateException(e);
         }
     }
+
+    public static Store openConnection(AccountInformation info) throws MessagingException, NoSuchProviderException {
+        Properties props = new Properties();
+        //TODO refactor with an ssl trust store
+        if (info.isSSLEnabled()) {
+            props.put("mail.imaps.ssl.trust", "*");
+        }
+        try {
+            Session session = Session.getInstance(props, null);
+            Store store = info.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
+            store.connect(info.getHost(), info.getPort(), info.getUsername(), info.getPassword());
+            return store;
+        } catch (MessagingException e) {
+            //try using starttls
+            if (info.isSSLEnabled()) {
+                props = new Properties();
+                props.put("mail.imap.ssl.trust", "*");
+                //try to use starttls
+                props.put("mail.imap.starttls.enable", "true");
+
+                Session session = Session.getInstance(props, null);
+                Store store = session.getStore("imap");
+                store.connect(info.getHost(), info.getPort(), info.getUsername(), info.getPassword());
+                return store;
+            }
+
+            throw e;
+        }
+    }
     
     void initSharedFolders(Store store, FetchProfile fetchProfile, Date modificationDate, boolean folderAnnotationEnabled, Listener... listener) throws MessagingException, IOException{
         if(!folderAnnotationEnabled){
@@ -173,19 +190,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         initCache();
         disableChangeListening();
         try {
-            Properties props = new Properties();
-
-            //TODO refactor with an ssl trust store
-            if (account.isSSLEnabled()) {
-                props.put("mail.imaps.ssl.trust", "*");
-            }
-
-            Session session = Session.getInstance(props, null);
-
-            Store store = account.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
-
-            store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
-
+            
+            Store store = openConnection(account);
+            
             if (remoteTags == null) {
                 remoteTags = new RemoteTags(configurationParser, account);
             }
