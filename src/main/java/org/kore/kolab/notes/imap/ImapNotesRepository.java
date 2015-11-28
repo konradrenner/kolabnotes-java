@@ -167,14 +167,13 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         Folder defaultFolder = store.getDefaultFolder();
         
         for(Folder folder : defaultFolder.list("*")){
-            folder.open(READ_ONLY);
-            
             if (folder instanceof IMAPFolder) {
                 GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());
                 ((IMAPFolder) folder).doCommand(metadataCommand);
 
                 //Just handle folders which contain notes
                 if (metadataCommand.isSharedNotesFolder()) {
+                    folder.open(READ_ONLY);
                     initNotesFromFolder(folder, fetchProfile, modificationDate, true);
 
                     for (Listener listen : listener) {
