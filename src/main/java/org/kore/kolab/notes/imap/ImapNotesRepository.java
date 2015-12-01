@@ -293,7 +293,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                     }
                 } catch (Exception e) {
                     for (Listener list : listener) {
-                        list.onFolderSyncException(e);
+                        list.onFolderSyncException(book.getSummary(), e);
                     }
                 }
             }
@@ -487,7 +487,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
         } catch (Exception e) {
             for (Listener listen : listener) {
-                listen.onFolderSyncException(e);
+                listen.onFolderSyncException(folder.getFullName(), e);
             }
         }
     }

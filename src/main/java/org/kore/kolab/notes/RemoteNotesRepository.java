@@ -86,6 +86,6 @@ public interface RemoteNotesRepository extends NotesRepository {
 
         void onSyncUpdate(String folderName);
 
-        void onFolderSyncException(Exception e);
+        void onFolderSyncException(String folderName, Exception e);
     }
 }
