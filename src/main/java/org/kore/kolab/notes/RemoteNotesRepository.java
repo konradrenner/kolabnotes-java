@@ -85,5 +85,7 @@ public interface RemoteNotesRepository extends NotesRepository {
     interface Listener {
 
         void onSyncUpdate(String folderName);
+
+        void onFolderSyncException(Exception e);
     }
 }

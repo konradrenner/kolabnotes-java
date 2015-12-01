@@ -212,85 +212,92 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
 
             for (Notebook book : notebooks) {
-                IMAPFolder folder;
-                if (rootfolder.equals(book.getSummary())) {
-                    folder = rootFolder;
-                } else if(book.isShared()){
-                    folder = (IMAPFolder) defaultFolder.getFolder(book.getSummary());
-                } else {
-                    folder = (IMAPFolder) rootFolder.getFolder(book.getSummary());
-                }
-
-                Type event = getEvent(book.getIdentification().getUid());
-                if (event != null) {
-                    if (event == Type.DELETE) {
-                        folder.delete(true);
-                        continue;
-                    } else if (event == Type.NEW || event == Type.UPDATE) {
-                        if (event == Type.NEW) {
-                            folder.create(Folder.HOLDS_MESSAGES);
-                        } else {
-                            //TODO
-                            folder.renameTo(folder);
-                        }
-
-                        if (account.isFolderAnnotationEnabled()) {
-                            folder.doCommand(new SetMetadataCommand(folder.getFullName()));
-                        }
+                try {
+                    IMAPFolder folder;
+                    if (rootfolder.equals(book.getSummary())) {
+                        folder = rootFolder;
+                    } else if (book.isShared()) {
+                        folder = (IMAPFolder) defaultFolder.getFolder(book.getSummary());
+                    } else {
+                        folder = (IMAPFolder) rootFolder.getFolder(book.getSummary());
                     }
-                }
 
-                //if the folder does not exist, do nothing
-                if (folder.exists()) {
-                    if (!folder.isOpen()) {
-                        folder.open(READ_WRITE);
-                    }
-                    ArrayList<Note> notes = new ArrayList<Note>(book.getNotes());
-                    Map<String, Note> deletedNotes = deletedNotesCache.get(book.getIdentification().getUid());
-                    if (deletedNotes != null) {
-                        notes.addAll(deletedNotes.values());
-                    }
-                    ArrayList<Message> messagesToAdd = new ArrayList<Message>();
-                    for (Note note : notes) {
-                        Message[] messages = folder.getMessages();
+                    Type event = getEvent(book.getIdentification().getUid());
+                    if (event != null) {
+                        if (event == Type.DELETE) {
+                            folder.delete(true);
+                            continue;
+                        } else if (event == Type.NEW || event == Type.UPDATE) {
+                            if (event == Type.NEW) {
+                                folder.create(Folder.HOLDS_MESSAGES);
+                            } else {
+                                //TODO
+                                folder.renameTo(folder);
+                            }
 
-                        event = getEvent(note.getIdentification().getUid());
-
-                        //IMAPMessages are readonly, so in case of update, first delete the old note, then create a new one                        
-                        if (event == Type.UPDATE) {
-                            String uid = note.getIdentification().getUid();
-
-                            MimeMessage message = findMessage(uid, messages);
-
-                            if (message != null) {
-                                folder.setFlags(new Message[]{message}, deleted, true);
+                            if (account.isFolderAnnotationEnabled()) {
+                                folder.doCommand(new SetMetadataCommand(folder.getFullName()));
                             }
                         }
-
-                        if (event == Type.NEW || event == Type.UPDATE) {
-
-                            messagesToAdd.add(createMessage(account,
-                                    note.getIdentification(),
-                                    note.getAuditInformation(),
-                                    new IMAPKolabDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser),
-                                    "application/x-vnd.kolab.note"));
-                            
-                            String uid = note.getIdentification().getUid();
-                            remoteTags.removeTags(uid);
-                            remoteTags.attachTags(uid, note.getCategories().toArray(new Tag[note.getCategories().size()]));
-                        } else if (event == Type.DELETE) {
-                            Message message = findMessage(note.getIdentification().getUid(), messages);
-                            if (message != null) {
-                                folder.setFlags(new Message[]{message}, deleted, true);
-                            }
-                            
-                            remoteTags.removeTags(note.getIdentification().getUid());
-                        }
                     }
-                    folder.addMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
-                    folder.close(true);
+
+                    //if the folder does not exist, do nothing
+                    if (folder.exists()) {
+                        if (!folder.isOpen()) {
+                            folder.open(READ_WRITE);
+                        }
+                        ArrayList<Note> notes = new ArrayList<Note>(book.getNotes());
+                        Map<String, Note> deletedNotes = deletedNotesCache.get(book.getIdentification().getUid());
+                        if (deletedNotes != null) {
+                            notes.addAll(deletedNotes.values());
+                        }
+                        ArrayList<Message> messagesToAdd = new ArrayList<Message>();
+                        for (Note note : notes) {
+                            Message[] messages = folder.getMessages();
+
+                            event = getEvent(note.getIdentification().getUid());
+
+                            //IMAPMessages are readonly, so in case of update, first delete the old note, then create a new one                        
+                            if (event == Type.UPDATE) {
+                                String uid = note.getIdentification().getUid();
+
+                                MimeMessage message = findMessage(uid, messages);
+
+                                if (message != null) {
+                                    folder.setFlags(new Message[]{message}, deleted, true);
+                                }
+                            }
+
+                            if (event == Type.NEW || event == Type.UPDATE) {
+
+                                messagesToAdd.add(createMessage(account,
+                                        note.getIdentification(),
+                                        note.getAuditInformation(),
+                                        new IMAPKolabDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser),
+                                        "application/x-vnd.kolab.note"));
+
+                                String uid = note.getIdentification().getUid();
+                                remoteTags.removeTags(uid);
+                                remoteTags.attachTags(uid, note.getCategories().toArray(new Tag[note.getCategories().size()]));
+                            } else if (event == Type.DELETE) {
+                                Message message = findMessage(note.getIdentification().getUid(), messages);
+                                if (message != null) {
+                                    folder.setFlags(new Message[]{message}, deleted, true);
+                                }
+
+                                remoteTags.removeTags(note.getIdentification().getUid());
+                            }
+                        }
+                        folder.addMessages(messagesToAdd.toArray(new Message[messagesToAdd.size()]));
+                        folder.close(true);
+                    }
+                } catch (Exception e) {
+                    for (Listener list : listener) {
+                        list.onFolderSyncException(e);
+                    }
                 }
             }
+
 
             remoteTags.merge();
 
@@ -426,55 +433,61 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
      * @throws MessagingException
      * @throws IOException
      */
-    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate, boolean sharedFolder) throws MessagingException, IOException {
-        Message[] messages = folder.getMessages();
+    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate, boolean sharedFolder, Listener... listener) throws MessagingException, IOException {
+        try {
+            Message[] messages = folder.getMessages();
 
-        fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
-        fetchProfile.add(FetchProfile.Item.FLAGS);
-        fetchProfile.add(FetchProfile.Item.ENVELOPE);
-        folder.fetch(messages, fetchProfile);
+            fetchProfile.add(FetchProfile.Item.CONTENT_INFO);
+            fetchProfile.add(FetchProfile.Item.FLAGS);
+            fetchProfile.add(FetchProfile.Item.ENVELOPE);
+            folder.fetch(messages, fetchProfile);
 
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        Identification id = new Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
-        AuditInformation audit = new AuditInformation(now, now);
+            Timestamp now = new Timestamp(System.currentTimeMillis());
+            Identification id = new Identification(Long.toString(System.currentTimeMillis()), "kolabnotes-java");
+            AuditInformation audit = new AuditInformation(now, now);
 
-        Notebook notebook;
-        if(sharedFolder){
-            SharedNotebook nb = new SharedNotebook(id, audit, Note.Classification.PUBLIC, folder.getFullName());
-            notebook = nb;
-        }else{
-           notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName()); 
-        }
-        addNotebook(notebook.getIdentification().getUid(), notebook);
-
-        for (Message m : messages) {
-            Date sentDate = m.getSentDate();
-            if (parseDate != null && parseDate.after(sentDate)) {
-                Timestamp tst = new Timestamp(sentDate.getTime());
-                Identification noteLoadedId = new Identification(m.getSubject(), "kolabnotes-java");
-                AuditInformation notLoadedAudit = new AuditInformation(tst, tst);
-                Note note = new Note(noteLoadedId, notLoadedAudit, Note.Classification.PUBLIC, NOT_LOADED);
-
-                notebook.addNote(note);
-                addNote(note.getIdentification().getUid(), note);
+            Notebook notebook;
+            if (sharedFolder) {
+                SharedNotebook nb = new SharedNotebook(id, audit, Note.Classification.PUBLIC, folder.getFullName());
+                notebook = nb;
             } else {
+                notebook = new Notebook(id, audit, Note.Classification.PUBLIC, folder.getName());
+            }
+            addNotebook(notebook.getIdentification().getUid(), notebook);
 
-            Multipart content = (Multipart) m.getContent();
-                for (int i = 0; i < content.getCount(); i++) {
-                    BodyPart bodyPart = content.getBodyPart(i);
-                    if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                        InputStream inputStream = bodyPart.getInputStream();
-                        Note note = (Note) parser.parse(inputStream);
-                        inputStream.close();
-                        notebook.addNote(note);
-                        addNote(note.getIdentification().getUid(), note);
+            for (Message m : messages) {
+                Date sentDate = m.getSentDate();
+                if (parseDate != null && parseDate.after(sentDate)) {
+                    Timestamp tst = new Timestamp(sentDate.getTime());
+                    Identification noteLoadedId = new Identification(m.getSubject(), "kolabnotes-java");
+                    AuditInformation notLoadedAudit = new AuditInformation(tst, tst);
+                    Note note = new Note(noteLoadedId, notLoadedAudit, Note.Classification.PUBLIC, NOT_LOADED);
 
-                        Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
-                        for (RemoteTags.TagDetails tag : tagsFromNote) {
-                            note.addCategories(tag.getTag());
+                    notebook.addNote(note);
+                    addNote(note.getIdentification().getUid(), note);
+                } else {
+
+                    Multipart content = (Multipart) m.getContent();
+                    for (int i = 0; i < content.getCount(); i++) {
+                        BodyPart bodyPart = content.getBodyPart(i);
+                        if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
+                            InputStream inputStream = bodyPart.getInputStream();
+                            Note note = (Note) parser.parse(inputStream);
+                            inputStream.close();
+                            notebook.addNote(note);
+                            addNote(note.getIdentification().getUid(), note);
+
+                            Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
+                            for (RemoteTags.TagDetails tag : tagsFromNote) {
+                                note.addCategories(tag.getTag());
+                            }
                         }
                     }
                 }
+            }
+        } catch (Exception e) {
+            for (Listener listen : listener) {
+                listen.onFolderSyncException(e);
             }
         }
     }
