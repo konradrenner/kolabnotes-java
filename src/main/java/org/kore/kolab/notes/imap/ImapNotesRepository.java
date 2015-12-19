@@ -6,11 +6,13 @@
 package org.kore.kolab.notes.imap;
 
 import com.sun.mail.imap.IMAPFolder;
+import com.sun.mail.imap.IMAPStore;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -135,11 +137,12 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         if (info.isSSLEnabled()) {
             props.put("mail.imaps.ssl.trust", "*");
         }
+        IMAPStore store = null;
+
         try {
             Session session = Session.getInstance(props, null);
-            Store store = info.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap");
+            store = (IMAPStore) (info.isSSLEnabled() ? session.getStore("imaps") : session.getStore("imap"));
             store.connect(info.getHost(), info.getPort(), info.getUsername(), info.getPassword());
-            return store;
         } catch (MessagingException e) {
             //try using starttls
             if (info.isSSLEnabled()) {
@@ -149,13 +152,27 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 props.put("mail.imap.starttls.enable", "true");
 
                 Session session = Session.getInstance(props, null);
-                Store store = session.getStore("imap");
+                store = (IMAPStore) session.getStore("imap");
                 store.connect(info.getHost(), info.getPort(), info.getUsername(), info.getPassword());
-                return store;
+            } else {
+                throw e;
             }
-
-            throw e;
         }
+        //Because of a hint from Aaron Seigo on G+, maybe they are using a filter in near future on the server, so that just "Kolabclients" can see Groupware folders
+        if (info.isFolderAnnotationEnabled()) {
+            Map<String, String> clientParams = new HashMap<String, String>();
+            clientParams.put("name", "/Kolabnotes-java");
+            clientParams.put("version", "2.0.2");
+            clientParams.put("os", System.getProperty("os.name"));
+            clientParams.put("support-url", "https://github.com/konradrenner/kolabnotes-java/issues");
+            clientParams.put("os-version", System.getProperty("os.version"));
+            clientParams.put("vendor", "kolabnotes-java");
+            clientParams.put("environment", System.getProperty("java.vendor") + "; Java " + System.getProperty("java.version") + "; " + System.getProperty("java.vendor.url"));
+
+            store.id(clientParams);
+        }
+
+        return store;
     }
     
     void initSharedFolders(Store store, FetchProfile fetchProfile, Date modificationDate, boolean folderAnnotationEnabled, Listener... listener) throws MessagingException, IOException{
