@@ -185,14 +185,25 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         
         for(Folder folder : defaultFolder.list("*")){
             if (folder instanceof IMAPFolder) {
+                IMAPFolder imapFolder = (IMAPFolder) folder;
                 GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());
-                ((IMAPFolder) folder).doCommand(metadataCommand);
+                imapFolder.doCommand(metadataCommand);
 
                 //Just handle folders which contain notes
                 if (metadataCommand.isSharedNotesFolder()) {
-                    folder.open(READ_ONLY);
-                    initNotesFromFolder(folder, fetchProfile, modificationDate, true);
 
+                    GetFolderPermissionsCommand permissionsCommand = new GetFolderPermissionsCommand(folder.getFullName());
+                    imapFolder.doCommand(permissionsCommand);
+
+                    folder.open(READ_ONLY);
+                    Notebook book = initNotesFromFolder(folder, fetchProfile, modificationDate, true);
+                    
+                    if (book != null) {
+                        SharedNotebook shared = (SharedNotebook) book;
+                        shared.setNoteCreationAllowed(permissionsCommand.isIsNoteCreationAllowed());
+                        shared.setNoteModificationAllowed(permissionsCommand.isIsNoteModificationAllowed());
+                    }
+                    
                     for (Listener listen : listener) {
                         listen.onSyncUpdate(folder.getFullName());
                     }
@@ -450,7 +461,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
      * @throws MessagingException
      * @throws IOException
      */
-    void initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate, boolean sharedFolder, Listener... listener) throws MessagingException, IOException {
+    Notebook initNotesFromFolder(Folder folder, FetchProfile fetchProfile, Date parseDate, boolean sharedFolder, Listener... listener) throws MessagingException, IOException {
         try {
             Message[] messages = folder.getMessages();
 
@@ -502,10 +513,12 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                     }
                 }
             }
+            return notebook;
         } catch (Exception e) {
             for (Listener listen : listener) {
                 listen.onFolderSyncException(folder.getFullName(), e);
             }
+            return null;
         }
     }
 }

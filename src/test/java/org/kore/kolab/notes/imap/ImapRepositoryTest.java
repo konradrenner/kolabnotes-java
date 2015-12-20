@@ -19,7 +19,6 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.UUID;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,7 +30,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
 import org.kore.kolab.notes.AuditInformation;
-import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
@@ -242,7 +240,9 @@ public class ImapRepositoryTest {
         for(Notebook nb : notebooks){
             System.out.println(nb.toString());
             if(nb.isShared()){
-                System.out.println("Shared from:"+((SharedNotebook)nb).getUsername());
+                System.out.println("Shared from:" + ((SharedNotebook) nb).getUsername());
+                System.out.println("Note creation allowed:" + ((SharedNotebook) nb).isNoteCreationAllowed());
+                System.out.println("Note modification allowed:" + ((SharedNotebook) nb).isNoteModificationAllowed());
             }
         }
         assertTrue(imapRepository.getTrackedChanges().isEmpty());

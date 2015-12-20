@@ -23,6 +23,8 @@ package org.kore.kolab.notes;
 public class SharedNotebook extends Notebook{
     
     private String shortName;
+    private boolean noteCreationAllowed;
+    private boolean noteModificationAllowed;
     
     public SharedNotebook(Identification identification, AuditInformation auditInformation, Classification classification, String summary) {
         super(identification, auditInformation, classification, summary);
@@ -36,11 +38,27 @@ public class SharedNotebook extends Notebook{
         this.shortName = shortName;
     }
 
+    public boolean isNoteCreationAllowed() {
+        return noteCreationAllowed;
+    }
+
+    public void setNoteCreationAllowed(boolean noteCreationAllowed) {
+        this.noteCreationAllowed = noteCreationAllowed;
+    }
+
+    public boolean isNoteModificationAllowed() {
+        return noteModificationAllowed;
+    }
+
+    public void setNoteModificationAllowed(boolean noteModificationAllowed) {
+        this.noteModificationAllowed = noteModificationAllowed;
+    }
+
     @Override
     public String toString() {
-        return "SharedNotebook{"+ super.toString() + "shortName=" + shortName + '}';
+        return "SharedNotebook{" + "shortName=" + shortName + ", noteCreationAllowed=" + noteCreationAllowed + ", noteModificationAllowed=" + noteModificationAllowed + '}';
     }
-    
+
     @Override
     public boolean isShared(){
         return true;
