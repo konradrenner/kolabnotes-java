@@ -56,14 +56,14 @@ public class RemoteTags {
     private final Map<String, TagDetails> tagPerTagname;
     private final KolabParser parser;
     
-    private final Set<Identification> tagsForDeletion;
+    private final Set<String> tagsForDeletion;
 
     public RemoteTags(KolabParser parser, AccountInformation login) {
         this.account = login;
         this.tagsPerNote = new HashMap<String, Set<TagDetails>>();
         this.tagPerTagname = new HashMap<String, TagDetails>();
         this.parser = parser;
-        this.tagsForDeletion = new HashSet<Identification>();
+        this.tagsForDeletion = new HashSet<String>();
     }
 
     /**
@@ -78,18 +78,21 @@ public class RemoteTags {
     
     public void applyLocalChanges(Tag... tags) {
         for (Tag tag : tags) {
-            TagDetails detail = tagPerTagname.get(tag.getName());
-            
-            if (detail != null) {
-                detail.getTag().setColor(tag.getColor());
-                detail.getTag().setName(tag.getName());
-                detail.getTag().setPriority(tag.getPriority());
+            for (TagDetails detail : remoteTags) {
+                if (detail.getIdentification().getUid().equals(tag.getIdentification().getUid())) {
+                    detail.getTag().setColor(tag.getColor());
+                    detail.getTag().setName(tag.getName());
+                    detail.getTag().setPriority(tag.getPriority());
+                    break;
+                }
             }
         }
     }
     
     public void deleteTags(Identification... ident) {
-        tagsForDeletion.addAll(Arrays.asList(ident));
+        for (Identification i : ident) {
+            tagsForDeletion.add(i.getUid());
+        }
     }
 
     /**
@@ -269,7 +272,7 @@ public class RemoteTags {
                 Message serverTag = searchForRemoteTag(detail.getIdentification().getUid(), serverTags);
 
                 if (serverTag != null) {
-                    if (tagsForDeletion.contains(detail.getIdentification())) {
+                    if (tagsForDeletion.contains(detail.getIdentification().getUid())) {
                         configFolder.setFlags(new Message[]{serverTag}, deleted, true);
                         createMessage = false;
                     } else {
