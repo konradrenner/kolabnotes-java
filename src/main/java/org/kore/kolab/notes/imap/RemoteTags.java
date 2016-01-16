@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -54,12 +55,15 @@ public class RemoteTags {
     private final Map<String, Set<TagDetails>> tagsPerNote;
     private final Map<String, TagDetails> tagPerTagname;
     private final KolabParser parser;
+    
+    private final Set<Identification> tagsForDeletion;
 
     public RemoteTags(KolabParser parser, AccountInformation login) {
         this.account = login;
         this.tagsPerNote = new HashMap<String, Set<TagDetails>>();
         this.tagPerTagname = new HashMap<String, TagDetails>();
         this.parser = parser;
+        this.tagsForDeletion = new HashSet<Identification>();
     }
 
     /**
@@ -82,6 +86,10 @@ public class RemoteTags {
                 detail.getTag().setPriority(tag.getPriority());
             }
         }
+    }
+    
+    public void deleteTags(Identification... ident) {
+        tagsForDeletion.addAll(Arrays.asList(ident));
     }
 
     /**
@@ -261,13 +269,19 @@ public class RemoteTags {
                 Message serverTag = searchForRemoteTag(detail.getIdentification().getUid(), serverTags);
 
                 if (serverTag != null) {
-                    TagDetails fromMessage = getFromMessage(serverTag);
-
-                    //If the remote and the local TagDetails contain the same entries, nothing must be done
-                    if (noChange(detail, fromMessage)) {
+                    if (tagsForDeletion.contains(detail.getIdentification())) {
+                        configFolder.setFlags(new Message[]{serverTag}, deleted, true);
                         createMessage = false;
                     } else {
-                        configFolder.setFlags(new Message[]{serverTag}, deleted, true);
+
+                        TagDetails fromMessage = getFromMessage(serverTag);
+
+                        //If the remote and the local TagDetails contain the same entries, nothing must be done
+                        if (noChange(detail, fromMessage)) {
+                            createMessage = false;
+                        } else {
+                            configFolder.setFlags(new Message[]{serverTag}, deleted, true);
+                        }
                     }
                 }
 
