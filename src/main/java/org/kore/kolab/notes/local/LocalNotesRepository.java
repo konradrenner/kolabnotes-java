@@ -16,11 +16,29 @@
  */
 package org.kore.kolab.notes.local;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Identification;
@@ -312,6 +330,88 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     public String getRootFolder() {
         return rootfolder;
     }
+    
+    @Override
+    public Path exportNotebook(Notebook nb, Path destination) throws IOException {
+        return exportNotebook(nb, parser, destination);
+    }
+
+    private String replacePossibleIllegalFileCharacters(String filename) {
+        return filename.replaceAll("[^a-zA-Z0-9.-]", "_");
+    }
+
+    @Override
+    public Path exportNotebook(Notebook notebook, KolabParser parser, Path destination) throws IOException {
+        final String fileEnding = ".xml";
+        final String root = "/";
+        Path tmpDirectory = Files.createTempDirectory(notebook.getIdentification().getUid());
+
+        List<Path> xmls = new ArrayList<>();
+
+        for (Note note : notebook.getNotes()) {
+            Path pathToXML = Paths.get(tmpDirectory.toString(), note.getIdentification().getUid() + fileEnding);
+            try (OutputStream os = Files.newOutputStream(pathToXML, StandardOpenOption.CREATE_NEW)) {
+                parser.write(note, os);
+            }
+
+            xmls.add(pathToXML);
+        }
+
+        final Path path = Paths.get(destination.toString(), replacePossibleIllegalFileCharacters(notebook.getSummary()) + ".zip");
+        final URI uri = URI.create("jar:file:" + path.toUri().getPath());
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env)) {
+            for (Path xml : xmls) {
+                Files.copy(xml, zipfs.getPath(root, xml.getFileName().toString()),
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
+        return path;
+    }
+    
+    @Override
+    public Notebook importNotebook(Path zipFile, final KolabParser parser) throws IOException {
+        final Notebook newNotebook = createNotebook(UUID.randomUUID().toString(), zipFile.getFileSystem().toString());
+
+        final Path path = Paths.get(zipFile.toString(), replacePossibleIllegalFileCharacters(newNotebook.getSummary()) + ".zip");
+        final URI uri = URI.create("jar:file:" + path.toUri().getPath());
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+            Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    try (InputStream stream = Files.newInputStream(file, StandardOpenOption.READ)) {
+                        Note parse = (Note) parser.parse(stream);
+                        newNotebook.addNote(parse);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException ioe) {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+
+        return newNotebook;
+    }
+    
+    @Override
+    public Notebook importNotebook(Path zipFile) throws IOException {
+        return importNotebook(zipFile, parser);
+    }
+
 
     @Override
     public int hashCode() {

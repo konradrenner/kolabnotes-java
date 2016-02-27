@@ -16,14 +16,21 @@
  */
 package org.kore.kolab.notes.local;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Note;
 import org.kore.kolab.notes.Notebook;
+import org.kore.kolab.notes.NotesRepository;
 import org.kore.kolab.notes.event.EventListener;
+import org.kore.kolab.notes.v3.KolabNotesParserV3;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -136,4 +143,67 @@ public class LocalNotesRepositoryTest {
         assertFalse(LocalNotesRepository.PropertyChangeStrategy.valueChanged("test", "test"));
     }
 
+    @Test
+    public void testNoteExportImport() throws IOException {
+        LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
+
+        Notebook book = repo.createNotebook("book1", "First Book");
+        Note createNote = book.createNote("note1", "First Note");
+        createNote.setClassification(Note.Classification.CONFIDENTIAL);
+        createNote.setColor(Colors.BLUE);
+        createNote.setDescription("Hello World");
+
+        createNote = book.createNote("note2", "Second Note");
+        createNote.setDescription("Hello World 2");
+
+        Path exportNotes = exportNotes(repo);
+
+        importNotes(exportNotes, new LocalNotesRepository(new KolabNotesParserV3(), "Notes"));
+    }
+
+    @Test
+    public void testNoteExportImportWithExisting() throws IOException {
+        LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
+
+        Notebook book = repo.createNotebook("book1", "First Book");
+        Note createNote = book.createNote("note1", "First Note");
+        createNote.setClassification(Note.Classification.CONFIDENTIAL);
+        createNote.setColor(Colors.BLUE);
+        createNote.setDescription("Hello World");
+
+        createNote = book.createNote("note2", "Second Note");
+        createNote.setDescription("Hello World 2");
+
+        Path exportNotes = exportNotes(repo);
+
+        repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
+
+        book = repo.createNotebook("book1", "First Book");
+        createNote = book.createNote("note1", "First Note");
+        createNote.setClassification(Note.Classification.CONFIDENTIAL);
+        createNote.setColor(Colors.BLUE);
+        createNote.setDescription("Hello World updated");
+
+
+        importNotesExisted(exportNotes, repo, createNote);
+    }
+
+    Path exportNotes(NotesRepository repo) throws IOException {
+
+        Path newZip = Files.createTempDirectory("test_" + Long.toString(System.currentTimeMillis()));
+
+        repo.exportNotebook(repo.getNotebook("book1"), newZip);
+
+        assertNotNull(newZip);
+
+        return newZip;
+    }
+
+    void importNotes(Path file, NotesRepository repo) throws IOException {
+        Notebook importNotebook = repo.importNotebook(file);
+        System.out.println(importNotebook);
+    }
+
+    void importNotesExisted(Path file, NotesRepository repo, Note existedNote) {
+    }
 }

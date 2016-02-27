@@ -16,6 +16,8 @@
  */
 package org.kore.kolab.notes;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import org.kore.kolab.notes.event.EventListener;
@@ -71,4 +73,62 @@ public interface NotesRepository {
      * @return Map
      */
     Map<String, EventListener.Type> getTrackedChanges();
+
+    /**
+     * Exports a notebook as ZIP file, the name of the notebook will be the name
+     * of the file. The notes will be stored in the Kolab notes storage format,
+     * the filename will be the UID of the note.
+     *
+     * Tags will not be exported.
+     *
+     * @param notebook
+     * @param destination - destination where the zip will be stored, the path
+     * must be a folder
+     * @return Path to the created ZIP
+     * @throws java.io.IOException
+     */
+    Path exportNotebook(Notebook notebook, Path destination) throws IOException;
+
+    /**
+     * Imports a notebook from a ZIP file, the name of the ZIP file will be the
+     * nae of the newly created notebook. If there is already a notebook with
+     * that name, new notes will be created. The name of a note must be the UID
+     * of the note, if a note with a given UID already exists, nothing will be
+     * done. If there is no note, a new note will be created.
+     *
+     * @param zipFile
+     * @return Imported notebook
+     * @throws java.io.IOException
+     */
+    Notebook importNotebook(Path zipFile) throws IOException;
+
+    /**
+     * Exports a notebook as ZIP file, the name of the notebook will be the name
+     * of the file. The notes will be stored in the format which will be parsed
+     * by the given KolabParser, the filename will be the UID of the note.
+     *
+     * Tags will not be exported.
+     *
+     * @param notebook
+     * @param parser
+     * @param destination - destination where the zip will be stored, the path
+     * must be a folder
+     * @return Path to the created ZIP
+     * @throws java.io.IOException
+     */
+    Path exportNotebook(Notebook notebook, KolabParser parser, Path destination) throws IOException;
+
+    /**
+     * Imports a notebook from a ZIP file, the name of the ZIP file will be the
+     * nae of the newly created notebook. If there is already a notebook with
+     * that name, new notes will be created. The name of a note must be the UID
+     * of the note, if a note with a given UID already exists, nothing will be
+     * done. If there is no note, a new note will be created.
+     *
+     * @param zipFile
+     * @param parser
+     * @return Import notebook
+     * @throws java.io.IOException
+     */
+    Notebook importNotebook(Path zipFile, KolabParser parser) throws IOException;
 }
