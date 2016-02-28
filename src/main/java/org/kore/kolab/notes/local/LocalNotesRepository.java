@@ -368,26 +368,35 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                         StandardCopyOption.REPLACE_EXISTING);
             }
         }
-
         return path;
     }
     
     @Override
     public Notebook importNotebook(Path zipFile, final KolabParser parser) throws IOException {
-        final Notebook newNotebook = createNotebook(UUID.randomUUID().toString(), zipFile.getFileSystem().toString());
+        String notebookName = zipFile.getFileName().toString();
+        String fileExtension = ".ZIP";
+        if (notebookName.toUpperCase().endsWith(fileExtension)) {
+            notebookName = notebookName.substring(0, notebookName.length() - fileExtension.length());
+        }
 
-        final Path path = Paths.get(zipFile.toString(), replacePossibleIllegalFileCharacters(newNotebook.getSummary()) + ".zip");
-        final URI uri = URI.create("jar:file:" + path.toUri().getPath());
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
+        final Notebook book;
+        Notebook existingBook = getNotebookBySummary(notebookName);
+        if (existingBook == null) {
+            book = createNotebook(UUID.randomUUID().toString(), notebookName);
+        } else {
+            book = existingBook;
+        }
 
-        try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+        try (FileSystem fs = FileSystems.newFileSystem(zipFile, null)) {
             Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     try (InputStream stream = Files.newInputStream(file, StandardOpenOption.READ)) {
                         Note parse = (Note) parser.parse(stream);
-                        newNotebook.addNote(parse);
+                        //don't change existing notes
+                        if (book.getNote(parse.getIdentification().getUid()) == null) {
+                            book.addNote(parse);
+                        }
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -404,7 +413,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
             });
         }
 
-        return newNotebook;
+        return book;
     }
     
     @Override

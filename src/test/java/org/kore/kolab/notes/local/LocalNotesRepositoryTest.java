@@ -19,7 +19,9 @@ package org.kore.kolab.notes.local;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
+import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -41,6 +43,9 @@ import static org.mockito.Mockito.when;
  * @author Konrad Renner
  */
 public class LocalNotesRepositoryTest {
+
+    private final long tst = 43343434;
+
     @Test
     public void testPropertyChangedDeleteNotebook() {
         LocalNotesRepository repo = mock(LocalNotesRepository.class);
@@ -147,14 +152,18 @@ public class LocalNotesRepositoryTest {
     public void testNoteExportImport() throws IOException {
         LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
 
-        Notebook book = repo.createNotebook("book1", "First Book");
+        Notebook book = repo.createNotebook("book1", "Book");
         Note createNote = book.createNote("note1", "First Note");
         createNote.setClassification(Note.Classification.CONFIDENTIAL);
         createNote.setColor(Colors.BLUE);
         createNote.setDescription("Hello World");
+        createNote.getAuditInformation().setCreationDate(tst);
+        createNote.getAuditInformation().setLastModificationDate(tst);
 
         createNote = book.createNote("note2", "Second Note");
         createNote.setDescription("Hello World 2");
+        createNote.getAuditInformation().setCreationDate(tst);
+        createNote.getAuditInformation().setLastModificationDate(tst);
 
         Path exportNotes = exportNotes(repo);
 
@@ -165,7 +174,7 @@ public class LocalNotesRepositoryTest {
     public void testNoteExportImportWithExisting() throws IOException {
         LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
 
-        Notebook book = repo.createNotebook("book1", "First Book");
+        Notebook book = repo.createNotebook("book1", "Book");
         Note createNote = book.createNote("note1", "First Note");
         createNote.setClassification(Note.Classification.CONFIDENTIAL);
         createNote.setColor(Colors.BLUE);
@@ -178,7 +187,7 @@ public class LocalNotesRepositoryTest {
 
         repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
 
-        book = repo.createNotebook("book1", "First Book");
+        book = repo.createNotebook("book1", "Book");
         createNote = book.createNote("note1", "First Note");
         createNote.setClassification(Note.Classification.CONFIDENTIAL);
         createNote.setColor(Colors.BLUE);
@@ -192,18 +201,64 @@ public class LocalNotesRepositoryTest {
 
         Path newZip = Files.createTempDirectory("test_" + Long.toString(System.currentTimeMillis()));
 
-        repo.exportNotebook(repo.getNotebook("book1"), newZip);
+        Path exportNotebook = repo.exportNotebook(repo.getNotebook("book1"), newZip);
 
-        assertNotNull(newZip);
+        assertNotNull(exportNotebook);
 
-        return newZip;
+        return exportNotebook;
     }
 
     void importNotes(Path file, NotesRepository repo) throws IOException {
         Notebook importNotebook = repo.importNotebook(file);
-        System.out.println(importNotebook);
+
+        assertEquals("Book", importNotebook.getSummary());
+        
+        Collection<Note> notes = importNotebook.getNotes();
+        
+        assertTrue(notes.size() == 2);
+
+        Note note = importNotebook.getNote("note1");
+        assertEquals("First Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertEquals(Colors.BLUE, note.getColor());
+        assertEquals("Hello World", note.getDescription());
+        assertEquals(Note.Classification.CONFIDENTIAL, note.getClassification());
+
+        note = importNotebook.getNote("note2");
+        assertEquals("Second Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertNull(note.getColor());
+        assertEquals("Hello World 2", note.getDescription());
+        assertEquals(Note.Classification.PUBLIC, note.getClassification());
+
     }
 
-    void importNotesExisted(Path file, NotesRepository repo, Note existedNote) {
+    void importNotesExisted(Path file, NotesRepository repo, Note existedNote) throws IOException {
+
+        Notebook importNotebook = repo.importNotebook(file);
+
+        assertEquals("Book", importNotebook.getSummary());
+
+        Collection<Note> notes = importNotebook.getNotes();
+
+        assertTrue(notes.size() == 2);
+
+        Note note = importNotebook.getNote("note1");
+        assertEquals("First Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertEquals(Colors.BLUE, note.getColor());
+        assertEquals("Hello World updated", note.getDescription());
+        assertEquals(Note.Classification.CONFIDENTIAL, note.getClassification());
+
+        note = importNotebook.getNote("note2");
+        assertEquals("Second Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertNull(note.getColor());
+        assertEquals("Hello World 2", note.getDescription());
+        assertEquals(Note.Classification.PUBLIC, note.getClassification());
     }
 }

@@ -77,7 +77,7 @@ public interface NotesRepository {
     /**
      * Exports a notebook as ZIP file, the name of the notebook will be the name
      * of the file. The notes will be stored in the Kolab notes storage format,
-     * the filename will be the UID of the note.
+     * the filename will be the summary of the note.
      *
      * Tags will not be exported.
      *
@@ -91,10 +91,10 @@ public interface NotesRepository {
 
     /**
      * Imports a notebook from a ZIP file, the name of the ZIP file will be the
-     * nae of the newly created notebook. If there is already a notebook with
-     * that name, new notes will be created. The name of a note must be the UID
-     * of the note, if a note with a given UID already exists, nothing will be
-     * done. If there is no note, a new note will be created.
+     * summary of the newly created notebook. If there is already a notebook
+     * with that name, new notes will be created. If a note with a given UID
+     * already exists, nothing will be done. If there is no note, a new note
+     * will be created.
      *
      * @param zipFile
      * @return Imported notebook
@@ -105,7 +105,7 @@ public interface NotesRepository {
     /**
      * Exports a notebook as ZIP file, the name of the notebook will be the name
      * of the file. The notes will be stored in the format which will be parsed
-     * by the given KolabParser, the filename will be the UID of the note.
+     * by the given KolabParser, the filename will be the summary of the note.
      *
      * Tags will not be exported.
      *
@@ -120,10 +120,10 @@ public interface NotesRepository {
 
     /**
      * Imports a notebook from a ZIP file, the name of the ZIP file will be the
-     * nae of the newly created notebook. If there is already a notebook with
-     * that name, new notes will be created. The name of a note must be the UID
-     * of the note, if a note with a given UID already exists, nothing will be
-     * done. If there is no note, a new note will be created.
+     * summary of the newly created notebook. If there is already a notebook
+     * with that name, new notes will be created. If a note with a given UID
+     * already exists, nothing will be done. If there is no note, a new note
+     * will be created.
      *
      * @param zipFile
      * @param parser
