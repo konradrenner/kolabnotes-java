@@ -16,9 +16,8 @@
  */
 package org.kore.kolab.notes.local;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import static junit.framework.Assert.assertNull;
@@ -165,7 +164,7 @@ public class LocalNotesRepositoryTest {
         createNote.getAuditInformation().setCreationDate(tst);
         createNote.getAuditInformation().setLastModificationDate(tst);
 
-        Path exportNotes = exportNotes(repo);
+        File exportNotes = exportNotes(repo);
 
         importNotes(exportNotes, new LocalNotesRepository(new KolabNotesParserV3(), "Notes"));
     }
@@ -183,7 +182,7 @@ public class LocalNotesRepositoryTest {
         createNote = book.createNote("note2", "Second Note");
         createNote.setDescription("Hello World 2");
 
-        Path exportNotes = exportNotes(repo);
+        File exportNotes = exportNotes(repo);
 
         repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
 
@@ -197,18 +196,21 @@ public class LocalNotesRepositoryTest {
         importNotesExisted(exportNotes, repo, createNote);
     }
 
-    Path exportNotes(NotesRepository repo) throws IOException {
+    File exportNotes(NotesRepository repo) throws IOException {
 
-        Path newZip = Files.createTempDirectory("test_" + Long.toString(System.currentTimeMillis()));
+        File tempDir = new File(System.getProperty("java.io.tmpdir"));
+        File newZipDir = new File(tempDir, "test_" + Long.toString(System.currentTimeMillis()));
+        newZipDir.mkdir();
+        File exportNotebook = repo.exportNotebook(repo.getNotebook("book1"), newZipDir);
 
-        Path exportNotebook = repo.exportNotebook(repo.getNotebook("book1"), newZip);
+        System.out.println(exportNotebook);
 
         assertNotNull(exportNotebook);
 
         return exportNotebook;
     }
 
-    void importNotes(Path file, NotesRepository repo) throws IOException {
+    void importNotes(File file, NotesRepository repo) throws IOException {
         Notebook importNotebook = repo.importNotebook(file);
 
         assertEquals("Book", importNotebook.getSummary());
@@ -235,7 +237,7 @@ public class LocalNotesRepositoryTest {
 
     }
 
-    void importNotesExisted(Path file, NotesRepository repo, Note existedNote) throws IOException {
+    void importNotesExisted(File file, NotesRepository repo, Note existedNote) throws IOException {
 
         Notebook importNotebook = repo.importNotebook(file);
 

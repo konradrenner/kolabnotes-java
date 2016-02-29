@@ -16,8 +16,8 @@
  */
 package org.kore.kolab.notes;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import org.kore.kolab.notes.event.EventListener;
@@ -84,10 +84,10 @@ public interface NotesRepository {
      * @param notebook
      * @param destination - destination where the zip will be stored, the path
      * must be a folder
-     * @return Path to the created ZIP
+     * @return File to the created ZIP
      * @throws java.io.IOException
      */
-    Path exportNotebook(Notebook notebook, Path destination) throws IOException;
+    File exportNotebook(Notebook notebook, File destination) throws IOException;
 
     /**
      * Imports a notebook from a ZIP file, the name of the ZIP file will be the
@@ -100,7 +100,7 @@ public interface NotesRepository {
      * @return Imported notebook
      * @throws java.io.IOException
      */
-    Notebook importNotebook(Path zipFile) throws IOException;
+    Notebook importNotebook(File zipFile) throws IOException;
 
     /**
      * Exports a notebook as ZIP file, the name of the notebook will be the name
@@ -113,10 +113,10 @@ public interface NotesRepository {
      * @param parser
      * @param destination - destination where the zip will be stored, the path
      * must be a folder
-     * @return Path to the created ZIP
+     * @return File to the created ZIP
      * @throws java.io.IOException
      */
-    Path exportNotebook(Notebook notebook, KolabParser parser, Path destination) throws IOException;
+    File exportNotebook(Notebook notebook, KolabParser parser, File destination) throws IOException;
 
     /**
      * Imports a notebook from a ZIP file, the name of the ZIP file will be the
@@ -130,5 +130,5 @@ public interface NotesRepository {
      * @return Import notebook
      * @throws java.io.IOException
      */
-    Notebook importNotebook(Path zipFile, KolabParser parser) throws IOException;
+    Notebook importNotebook(File zipFile, KolabParser parser) throws IOException;
 }

@@ -16,30 +16,22 @@
  */
 package org.kore.kolab.notes.local;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.KolabParser;
@@ -332,7 +324,7 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     }
     
     @Override
-    public Path exportNotebook(Notebook nb, Path destination) throws IOException {
+    public File exportNotebook(Notebook nb, File destination) throws IOException {
         return exportNotebook(nb, parser, destination);
     }
 
@@ -341,39 +333,34 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
     }
 
     @Override
-    public Path exportNotebook(Notebook notebook, KolabParser parser, Path destination) throws IOException {
+    public File exportNotebook(Notebook notebook, KolabParser parser, File destination) throws IOException {
         final String fileEnding = ".xml";
-        final String root = "/";
-        Path tmpDirectory = Files.createTempDirectory(notebook.getIdentification().getUid());
 
-        List<Path> xmls = new ArrayList<>();
+        File zipFile = new File(destination, replacePossibleIllegalFileCharacters(notebook.getSummary()) + ".zip");
+        zipFile.createNewFile();
+
+        ZipOutputStream outStream = new ZipOutputStream(new FileOutputStream(zipFile));
 
         for (Note note : notebook.getNotes()) {
-            Path pathToXML = Paths.get(tmpDirectory.toString(), note.getIdentification().getUid() + fileEnding);
-            try (OutputStream os = Files.newOutputStream(pathToXML, StandardOpenOption.CREATE_NEW)) {
-                parser.write(note, os);
-            }
+            ZipEntry entry = new ZipEntry(note.getSummary() + fileEnding);
+            outStream.putNextEntry(entry);
 
-            xmls.add(pathToXML);
+            ByteArrayOutputStream noteStream = new ByteArrayOutputStream();
+            parser.write(note, noteStream);
+            byte[] noteBytes = noteStream.toByteArray();
+            noteStream.close();
+
+            outStream.write(noteBytes, 0, noteBytes.length);
+            outStream.closeEntry();
         }
 
-        final Path path = Paths.get(destination.toString(), replacePossibleIllegalFileCharacters(notebook.getSummary()) + ".zip");
-        final URI uri = URI.create("jar:file:" + path.toUri().getPath());
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env)) {
-            for (Path xml : xmls) {
-                Files.copy(xml, zipfs.getPath(root, xml.getFileName().toString()),
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        return path;
+        outStream.close();
+        return zipFile;
     }
     
     @Override
-    public Notebook importNotebook(Path zipFile, final KolabParser parser) throws IOException {
-        String notebookName = zipFile.getFileName().toString();
+    public Notebook importNotebook(File zipFile, final KolabParser parser) throws IOException {
+        String notebookName = zipFile.getName();
         String fileExtension = ".ZIP";
         if (notebookName.toUpperCase().endsWith(fileExtension)) {
             notebookName = notebookName.substring(0, notebookName.length() - fileExtension.length());
@@ -387,37 +374,28 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
             book = existingBook;
         }
 
-        try (FileSystem fs = FileSystems.newFileSystem(zipFile, null)) {
-            Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    try (InputStream stream = Files.newInputStream(file, StandardOpenOption.READ)) {
-                        Note parse = (Note) parser.parse(stream);
-                        //don't change existing notes
-                        if (book.getNote(parse.getIdentification().getUid()) == null) {
-                            book.addNote(parse);
-                        }
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
+        ZipFile zip = new ZipFile(zipFile);
+        Enumeration<? extends ZipEntry> entries = zip.entries();
 
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return FileVisitResult.CONTINUE;
-                }
+        while (entries.hasMoreElements()) {
+            ZipEntry nextElement = entries.nextElement();
 
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException ioe) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            InputStream inputStream = zip.getInputStream(nextElement);
+
+            Note parse = (Note) parser.parse(inputStream);
+            //don't change existing notes
+            if (book.getNote(parse.getIdentification().getUid()) == null) {
+                book.addNote(parse);
+            }
+
+            inputStream.close();
         }
 
         return book;
     }
     
     @Override
-    public Notebook importNotebook(Path zipFile) throws IOException {
+    public Notebook importNotebook(File zipFile) throws IOException {
         return importNotebook(zipFile, parser);
     }
 
