@@ -18,6 +18,7 @@ package org.kore.kolab.notes;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Map;
@@ -145,4 +146,19 @@ public interface NotesRepository {
      * @throws java.io.IOException
      */
     Notebook importNotebook(File zipFile, KolabParser parser) throws IOException;
+
+    /**
+     * Imports a notebook from a ZIP file, the name of the ZIP file will be the
+     * summary of the newly created notebook. If there is already a notebook
+     * with that name, new notes will be created. If a note with a given UID
+     * already exists, nothing will be done. If there is no note, a new note
+     * will be created.
+     *
+     * @param notebookName
+     * @param parser
+     * @param zipFile
+     * @return Import notebook
+     * @throws java.io.IOException
+     */
+    Notebook importNotebook(String notebookName, KolabParser parser, InputStream zipFile) throws IOException;
 }

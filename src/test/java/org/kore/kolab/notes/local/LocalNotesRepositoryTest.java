@@ -17,6 +17,8 @@
 package org.kore.kolab.notes.local;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -148,6 +150,28 @@ public class LocalNotesRepositoryTest {
     }
 
     @Test
+    public void testNoteExportImportWithStreams() throws IOException {
+        LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
+
+        Notebook book = repo.createNotebook("book1", "Book");
+        Note createNote = book.createNote("note1", "First Note");
+        createNote.setClassification(Note.Classification.CONFIDENTIAL);
+        createNote.setColor(Colors.BLUE);
+        createNote.setDescription("Hello World");
+        createNote.getAuditInformation().setCreationDate(tst);
+        createNote.getAuditInformation().setLastModificationDate(tst);
+
+        createNote = book.createNote("note2", "Second Note");
+        createNote.setDescription("Hello World 2");
+        createNote.getAuditInformation().setCreationDate(tst);
+        createNote.getAuditInformation().setLastModificationDate(tst);
+
+        File exportNotes = exportNotesWithStream(repo);
+
+        importNotesWithStream(exportNotes, new LocalNotesRepository(new KolabNotesParserV3(), "Notes"));
+    }
+
+    @Test
     public void testNoteExportImport() throws IOException {
         LocalNotesRepository repo = new LocalNotesRepository(new KolabNotesParserV3(), "Notes");
 
@@ -262,5 +286,48 @@ public class LocalNotesRepositoryTest {
         assertNull(note.getColor());
         assertEquals("Hello World 2", note.getDescription());
         assertEquals(Note.Classification.PUBLIC, note.getClassification());
+    }
+
+    File exportNotesWithStream(NotesRepository repo) throws IOException {
+
+        File tempDir = new File(System.getProperty("java.io.tmpdir"));
+        File newZipDir = new File(tempDir, "test_" + Long.toString(System.currentTimeMillis()));
+        newZipDir.mkdir();
+        File exportNotebook = new File(newZipDir, "book1.zip");
+        exportNotebook.createNewFile();
+        repo.exportNotebook(repo.getNotebook("book1"), new KolabNotesParserV3(), new FileOutputStream(exportNotebook));
+
+        System.out.println(exportNotebook);
+
+        assertNotNull(exportNotebook);
+
+        return exportNotebook;
+    }
+
+    void importNotesWithStream(File file, NotesRepository repo) throws IOException {
+        Notebook importNotebook = repo.importNotebook("Book", new KolabNotesParserV3(), new FileInputStream(file));
+
+        assertEquals("Book", importNotebook.getSummary());
+
+        Collection<Note> notes = importNotebook.getNotes();
+
+        assertTrue(notes.size() == 2);
+
+        Note note = importNotebook.getNote("note1");
+        assertEquals("First Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertEquals(Colors.BLUE, note.getColor());
+        assertEquals("Hello World", note.getDescription());
+        assertEquals(Note.Classification.CONFIDENTIAL, note.getClassification());
+
+        note = importNotebook.getNote("note2");
+        assertEquals("Second Note", note.getSummary());
+        assertNotNull(note.getAuditInformation().getCreationDate().getTime());
+        assertNotNull(note.getAuditInformation().getLastModificationDate().getTime());
+        assertNull(note.getColor());
+        assertEquals("Hello World 2", note.getDescription());
+        assertEquals(Note.Classification.PUBLIC, note.getClassification());
+
     }
 }

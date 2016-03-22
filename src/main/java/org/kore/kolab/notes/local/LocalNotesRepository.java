@@ -16,6 +16,7 @@
  */
 package org.kore.kolab.notes.local;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Identification;
@@ -363,6 +365,53 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
         }
         outStream.close();
     }
+
+    @Override
+    public Notebook importNotebook(String fileName, KolabParser parser, InputStream zipFile) throws IOException {
+        String notebookName = fileName;
+        String fileExtension = ".ZIP";
+        if (notebookName.toUpperCase().endsWith(fileExtension)) {
+            notebookName = notebookName.substring(0, notebookName.length() - fileExtension.length());
+        }
+
+        final Notebook book;
+        Notebook existingBook = getNotebookBySummary(notebookName);
+        if (existingBook == null) {
+            book = createNotebook(UUID.randomUUID().toString(), notebookName);
+        } else {
+            book = existingBook;
+        }
+
+        ZipInputStream zipStream = new ZipInputStream(zipFile);
+        ZipEntry nextElement;
+        while ((nextElement = zipStream.getNextEntry()) != null) {
+
+            //necessary because it is possible, that the stream will be closed from the parse method
+            byte[] entryAsByteArray = getEntryAsByteArray(zipStream);
+            
+            Note parse = (Note) parser.parse(new ByteArrayInputStream(entryAsByteArray));
+            //don't change existing notes
+            if (book.getNote(parse.getIdentification().getUid()) == null) {
+                book.addNote(parse);
+            }
+
+            zipStream.closeEntry();
+        }
+        zipStream.close();
+
+        return book;
+    }
+
+    byte[] getEntryAsByteArray(ZipInputStream zis) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int count;
+        while ((count = zis.read(buffer)) != -1) {
+            baos.write(buffer, 0, count);
+        }
+        return baos.toByteArray();
+    }
+
     
     @Override
     public Notebook importNotebook(File zipFile, final KolabParser parser) throws IOException {
