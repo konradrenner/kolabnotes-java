@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -334,28 +335,33 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
 
     @Override
     public File exportNotebook(Notebook notebook, KolabParser parser, File destination) throws IOException {
-        final String fileEnding = ".xml";
 
         File zipFile = new File(destination, replacePossibleIllegalFileCharacters(notebook.getSummary()) + ".zip");
         zipFile.createNewFile();
 
-        ZipOutputStream outStream = new ZipOutputStream(new FileOutputStream(zipFile));
+        createZIP(new FileOutputStream(zipFile), notebook, parser);
+        return zipFile;
+    }
 
+    @Override
+    public void exportNotebook(Notebook notebook, KolabParser parser, OutputStream destination) throws IOException {
+        createZIP(destination, notebook, parser);
+    }
+
+    private void createZIP(OutputStream destination, Notebook notebook, KolabParser parser1) throws IOException {
+        final String fileEnding = ".xml";
+        ZipOutputStream outStream = new ZipOutputStream(destination);
         for (Note note : notebook.getNotes()) {
             ZipEntry entry = new ZipEntry(note.getSummary() + fileEnding);
             outStream.putNextEntry(entry);
-
             ByteArrayOutputStream noteStream = new ByteArrayOutputStream();
-            parser.write(note, noteStream);
+            parser1.write(note, noteStream);
             byte[] noteBytes = noteStream.toByteArray();
             noteStream.close();
-
             outStream.write(noteBytes, 0, noteBytes.length);
             outStream.closeEntry();
         }
-
         outStream.close();
-        return zipFile;
     }
     
     @Override

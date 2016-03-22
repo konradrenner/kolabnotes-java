@@ -18,6 +18,7 @@ package org.kore.kolab.notes;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Map;
 import org.kore.kolab.notes.event.EventListener;
@@ -73,6 +74,19 @@ public interface NotesRepository {
      * @return Map
      */
     Map<String, EventListener.Type> getTrackedChanges();
+
+    /**
+     * Exports a notebook as ZIP file. The notes will be stored in the Kolab
+     * notes storage format, the filename will be the summary of the note.
+     *
+     * Tags will not be exported.
+     *
+     * @param notebook
+     * @param parser
+     * @param destination - destination where the zip will be stored
+     * @throws java.io.IOException
+     */
+    void exportNotebook(Notebook notebook, KolabParser parser, OutputStream destination) throws IOException;
 
     /**
      * Exports a notebook as ZIP file, the name of the notebook will be the name
