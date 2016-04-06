@@ -82,6 +82,15 @@ public interface RemoteNotesRepository extends NotesRepository {
      */
     boolean noteCompletelyLoaded(Note note);
 
+    void setBase64Coder(Base64Coder coder);
+
+    interface Base64Coder {
+
+        String encode(byte[] bytes);
+
+        byte[] decode(String value);
+    }
+
     interface Listener {
 
         void onSyncUpdate(String folderName);

@@ -59,11 +59,17 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     private final AccountInformation account;
     private final KolabParser configurationParser;
     private RemoteTags remoteTags;
+    private Base64Coder coder;
 
     public ImapNotesRepository(KolabParser parser, AccountInformation account, String rootFolder, KolabParser configurationParser) {
         super(parser, rootFolder);
         this.account = account;
         this.configurationParser = configurationParser;
+    }
+
+    @Override
+    public void setBase64Coder(Base64Coder coder) {
+        this.coder = coder;
     }
 
     public RemoteTags getRemoteTags() {
