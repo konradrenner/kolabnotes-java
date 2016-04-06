@@ -18,7 +18,9 @@ package org.kore.kolab.notes;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import org.kore.kolab.notes.event.AbstractEventSupport;
 import org.kore.kolab.notes.event.EventListener;
@@ -42,6 +44,7 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
     private String summary;
     private String description;
     private Color color;
+    private final Map<String, Attachment> attachments;
 
     public Note(Identification identification,
             AuditInformation auditInformation,
@@ -53,6 +56,7 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         this.classification = classification;
         this.summary = summary;
         this.categories = new LinkedHashSet<Tag>();
+        this.attachments = new LinkedHashMap<String, Attachment>();
     }
 
     @Override
@@ -82,6 +86,24 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
             firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "categories", cat, null);
             this.categories.remove(cat);
         }
+    }
+
+    public void addAttachments(Attachment... atts) {
+        for (Attachment att : atts) {
+            firePropertyChange(getIdentification().getUid(), EventListener.Type.NEW, "attachments", null, att);
+            this.attachments.put(att.getId(), att);
+        }
+    }
+
+    public void removeAttachments(Attachment... atts) {
+        for (Attachment att : atts) {
+            firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "attachments", att, null);
+            this.attachments.remove(att.getId());
+        }
+    }
+
+    public Attachment getAttachment(String id) {
+        return this.attachments.get(id);
     }
 
     public Classification getClassification() {

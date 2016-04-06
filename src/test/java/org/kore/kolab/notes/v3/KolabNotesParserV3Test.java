@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
+import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Colors;
 import org.kore.kolab.notes.Identification;
@@ -38,6 +39,29 @@ public class KolabNotesParserV3Test {
         assertNotNull(note.getIdentification().getUid());
         assertTrue(Colors.WHITE.equals(note.getColor()));
         assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
+        System.out.println(note);
+    }
+
+    @Test
+    public void testParseNoteWithAttachment() {
+        InputStream inputStream = getClass().getResourceAsStream("kolab_test_attachment.xml");
+        Note note = parser.parse(inputStream);
+
+        assertEquals(Note.Classification.PUBLIC, note.getClassification());
+        assertEquals("Rich Text", note.getSummary());
+        assertTrue(note.getDescription().startsWith("Test description"));
+        assertNotNull(note.getAuditInformation().getCreationDate());
+        assertNotNull(note.getAuditInformation().getLastModificationDate());
+        assertNotNull(note.getIdentification().getUid());
+        assertTrue(Colors.WHITE.equals(note.getColor()));
+        assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
+        Attachment attachment = note.getAttachment("attachment");
+        assertNotNull(attachment);
+        assertEquals("akonadi.png", attachment.getFileName());
+        assertEquals("attachment", attachment.getId());
+        assertEquals("image/png", attachment.getMimeType());
+        //if note is loaded from kolab.xml there can be no data, choice binary is not supported at the moment
+        assertTrue(attachment.getData().length == 0);
         System.out.println(note);
     }
 

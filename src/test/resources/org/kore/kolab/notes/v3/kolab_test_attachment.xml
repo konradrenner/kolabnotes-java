@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<note xmlns="http://kolab.org" version="3.0">
+
+  <uid>599d595c-a715-4a6f-821b-c368e4cb70c2</uid>
+
+  <prodid>kolabnotes-provider</prodid>
+
+  <creation-date>2015-02-11T21:18:14Z</creation-date>
+
+  <last-modification-date>2015-02-11T20:26:44Z</last-modification-date>
+  
+  <categories>APPOINTMENT,EDUCATION</categories>
+
+  <classification>PUBLIC</classification>
+  
+  <attachment>
+      <parameters>
+          <fmttype>image/png</fmttype>
+          <x-label>akonadi.png</x-label>
+      </parameters>
+      <uri>cid:attachment</uri>
+  </attachment>
+
+  <summary>Rich Text</summary>
+
+  <description>Test description,
+      a little testing desc</description>
+
+  <color>#FFFFFF</color>
+
+</note>

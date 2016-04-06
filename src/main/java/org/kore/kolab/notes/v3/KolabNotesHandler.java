@@ -3,8 +3,10 @@ package org.kore.kolab.notes.v3;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.util.Calendar;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TimeZone;
+import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Color;
 import org.kore.kolab.notes.Colors;
@@ -32,13 +34,19 @@ public class KolabNotesHandler
         completeValue = new StringBuilder();
     }
 
+    @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         completeValue.append(new String(ch, start, length));
     }
 
+    @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
         try {
-            builder.setValue(qName, completeValue.toString());
+            if (qName.contains("attachment")) {
+                builder.addAttachment();
+            } else {
+                builder.setValue(qName, completeValue.toString());
+            }
         } catch (ParseException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -55,30 +63,45 @@ public class KolabNotesHandler
         private String productId;
         private Timestamp creationDate;
         private Timestamp lastModificationDate;
-        private Set<String> categories;
         private Note.Classification classification;
         private String summary;
         private String description;
         private Color color;
+        private Set<Attachment> attachments = new LinkedHashSet<Attachment>();
+
+        //attachment fields
+        private String xlabel;
+        private String fmttype;
+        private String uri;
+        
+        void addAttachment() {
+            attachments.add(new Attachment(uri, xlabel, fmttype));
+        }
 
         void setValue(String name, String value) throws ParseException {
-            if ("uid".equals(name)) {
+            if ("uid".contains(name)) {
                 uid = value;
-            } else if ("prodid".equals(name)) {
+            } else if ("prodid".contains(name)) {
                 productId = value;
-            } else if ("creation-date".equals(name)) {
+            } else if ("creation-date".contains(name)) {
                 creationDate = convertTimestamp(value);
-            } else if ("last-modification-date".equals(name)) {
+            } else if ("last-modification-date".contains(name)) {
                 lastModificationDate = convertTimestamp(value);
-            } else if ("classification".equals(name)) {
+            } else if ("classification".contains(name)) {
                 classification = Note.Classification.valueOf(value.toUpperCase());
-            } else if ("summary".equals(name)) {
+            } else if ("summary".contains(name)) {
                 summary = value;
-            } else if ("description".equals(name)) {
+            } else if ("description".contains(name)) {
                 description = value;
-            } else if ("color".equals(name)) {
+            } else if ("color".contains(name)) {
                 color = Colors.getColor(value);
-            } 
+            } else if ("fmttype".contains(name)) {
+                fmttype = value;
+            } else if ("uri".contains(name)) {
+                uri = value.substring(value.indexOf(":") + 1);
+            } else if ("x-label".contains(name)) {
+                xlabel = value;
+            }
         }
 
         Note build() {
@@ -88,6 +111,7 @@ public class KolabNotesHandler
             note.setDescription(description);
             note.setSummary(summary);
             note.setColor(color);
+            note.addAttachments(attachments.toArray(new Attachment[attachments.size()]));
 
             return note;
         }

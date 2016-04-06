@@ -131,6 +131,8 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                             repo.removeFromNotesCache(oldValue.toString(), uid);
                         } else if ("categories".equalsIgnoreCase(propertyName)) {
                             correctType = EventListener.Type.UPDATE;
+                        } else if ("attachments".equalsIgnoreCase(propertyName)) {
+                            correctType = EventListener.Type.UPDATE;
                         }
                         putEvent(repo, uid, correctType);
                     }
@@ -145,6 +147,8 @@ public class LocalNotesRepository implements Serializable, NotesRepository, Even
                         } else if ("note".equalsIgnoreCase(propertyName)) {
                             repo.putInNotesCache(uid, (Note) newValue);
                         } else if ("categories".equalsIgnoreCase(propertyName)) {
+                            correctType = EventListener.Type.UPDATE;
+                        } else if ("attachments".equalsIgnoreCase(propertyName)) {
                             correctType = EventListener.Type.UPDATE;
                         }
                         putEvent(repo, uid, correctType);
