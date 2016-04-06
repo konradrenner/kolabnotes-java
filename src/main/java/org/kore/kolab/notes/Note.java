@@ -17,6 +17,7 @@
 package org.kore.kolab.notes;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -104,6 +105,10 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
 
     public Attachment getAttachment(String id) {
         return this.attachments.get(id);
+    }
+
+    public Collection<Attachment> getAttachments() {
+        return Collections.unmodifiableCollection(this.attachments.values());
     }
 
     public Classification getClassification() {

@@ -78,6 +78,20 @@ public class KolabNotesParserV3Test {
 
         parser.write(note, System.out);
     }
+    
+    @Test
+    public void testWriteNoteWithAttachment() throws Exception {
+        Identification identification = new Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
+        AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
+                new Timestamp(System.currentTimeMillis()));
+        
+        Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
+        note.setDescription("Beschreibung");
+        note.setColor(Colors.BLACK);
+        note.addAttachments(new Attachment("id", "filename", "mimeType"));
+        
+        parser.write(note, System.out);
+    }
 
     @Test
     public void testWriteNoteWithInlineImage() throws Exception {

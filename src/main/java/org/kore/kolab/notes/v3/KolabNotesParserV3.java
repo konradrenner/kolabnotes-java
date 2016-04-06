@@ -51,6 +51,7 @@ public class KolabNotesParserV3
                     .withIdentification(note.getIdentification())
                     .withAuditInformation(note.getAuditInformation())
                     .withClassification(note.getClassification())
+                    .withAttachments(note.getAttachments())
                     .withSummary(note.getSummary())
                     .withDescription(note.getDescription())
                     .withColor(note.getColor())

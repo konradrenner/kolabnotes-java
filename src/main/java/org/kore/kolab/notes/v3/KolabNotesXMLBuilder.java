@@ -10,8 +10,10 @@ import static java.util.Calendar.MINUTE;
 import static java.util.Calendar.MONTH;
 import static java.util.Calendar.SECOND;
 import static java.util.Calendar.YEAR;
+import java.util.Collection;
 import java.util.Date;
 import java.util.TimeZone;
+import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Color;
 import org.kore.kolab.notes.Identification;
@@ -89,6 +91,25 @@ public final class KolabNotesXMLBuilder {
             builder.append("</summary>");
         } else {
             builder.append("<summary/>");
+        }
+        return this;
+    }
+
+    public KolabNotesXMLBuilder withAttachments(Collection<Attachment> attachments) {
+        for (Attachment attachment : attachments) {
+            builder.append("<attachment>");
+            builder.append("<parameters>");
+            builder.append("<fmttype>");
+            builder.append(attachment.getMimeType());
+            builder.append("</fmttype>");
+            builder.append("<x-label>");
+            builder.append(attachment.getFileName());
+            builder.append("</x-label>");
+            builder.append("</parameters>");
+            builder.append("<uri>");
+            builder.append(attachment.getId());
+            builder.append("</uri>");
+            builder.append("</attachment>");
         }
         return this;
     }
