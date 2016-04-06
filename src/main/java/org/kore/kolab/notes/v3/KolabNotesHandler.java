@@ -48,8 +48,7 @@ public class KolabNotesHandler
                 builder.setValue(qName, completeValue.toString());
             }
         } catch (ParseException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new KolabParseException(e);
         }
     }
 
