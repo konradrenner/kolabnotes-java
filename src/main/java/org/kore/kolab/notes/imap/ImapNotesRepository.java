@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,10 +31,12 @@ import korex.mail.NoSuchProviderException;
 import korex.mail.Session;
 import korex.mail.Store;
 import korex.mail.internet.InternetAddress;
+import korex.mail.internet.InternetHeaders;
 import korex.mail.internet.MimeBodyPart;
 import korex.mail.internet.MimeMessage;
 import korex.mail.internet.MimeMultipart;
 import org.kore.kolab.notes.AccountInformation;
+import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.KolabParser;
@@ -303,12 +306,16 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                             }
 
                             if (event == Type.NEW || event == Type.UPDATE) {
-
-                                messagesToAdd.add(createMessage(account,
+                                
+                                MimeMessage message = createMessage(account,
                                         note.getIdentification(),
                                         note.getAuditInformation(),
                                         new IMAPKolabDataHandler(note, "APPLICATION/VND.KOLAB+XML", parser),
-                                        "application/x-vnd.kolab.note"));
+                                        "application/x-vnd.kolab.note");
+                                
+                                addAttachments(message, note.getAttachments());
+                                
+                                messagesToAdd.add(message);
 
                                 String uid = note.getIdentification().getUid();
                                 remoteTags.removeTags(uid);
@@ -362,8 +369,24 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         enableChangeListening();
     }
 
+    private void addAttachments(MimeMessage message, Collection<Attachment> attachments) throws MessagingException, IOException {
+        Object content = message.getContent();
+        if (content instanceof Multipart) {
+            Multipart multipart = (Multipart) content;
+            for (Attachment attachment : attachments) {
+                InternetHeaders headers = new InternetHeaders();
+                headers.addHeader("Content-ID", attachment.getId());
+                headers.addHeader("Content-Type", attachment.getMimeType());
+                headers.addHeader("Content-Transfer-Encoding", "base64");
+                headers.addHeader("Content-Disposition", attachment.getFileName());
+                MimeBodyPart part = new MimeBodyPart(headers, attachment.getData());
+                multipart.addBodyPart(part);
+            }
+        }
+    }
 
-    static Message createMessage(AccountInformation account, Identification ident, AuditInformation audit, DataHandler handler, String type) throws MessagingException {
+
+    static MimeMessage createMessage(AccountInformation account, Identification ident, AuditInformation audit, DataHandler handler, String type) throws MessagingException {
         MimeMessage message = new MimeMessage(Session.getInstance(System.getProperties()));
 
         message.setFrom(new InternetAddress(account.getUsername()));
@@ -502,6 +525,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 } else {
 
                     Multipart content = (Multipart) m.getContent();
+
+                    //TODO
                     for (int i = 0; i < content.getCount(); i++) {
                         BodyPart bodyPart = content.getBodyPart(i);
                         if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
