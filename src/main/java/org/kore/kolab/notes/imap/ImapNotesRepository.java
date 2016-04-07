@@ -7,6 +7,7 @@ package org.kore.kolab.notes.imap;
 
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -526,22 +528,9 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
                     Multipart content = (Multipart) m.getContent();
 
-                    //TODO
-                    for (int i = 0; i < content.getCount(); i++) {
-                        BodyPart bodyPart = content.getBodyPart(i);
-                        if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
-                            InputStream inputStream = bodyPart.getInputStream();
-                            Note note = (Note) parser.parse(inputStream);
-                            inputStream.close();
-                            notebook.addNote(note);
-                            addNote(note.getIdentification().getUid(), note);
+                    Map<String, byte[]> attachmentContents = new LinkedHashMap<String, byte[]>();
 
-                            Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
-                            for (RemoteTags.TagDetails tag : tagsFromNote) {
-                                note.addCategories(tag.getTag());
-                            }
-                        }
-                    }
+                    loadFromMessage(content, notebook, attachmentContents);
                 }
             }
             return notebook;
@@ -551,5 +540,68 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             }
             return null;
         }
+    }
+
+    private void loadFromMessage(Multipart content, Notebook notebook, Map<String, byte[]> attachmentContents) throws IOException, MessagingException {
+        Note note = null;
+        for (int i = 0; i < content.getCount(); i++) {
+            BodyPart bodyPart = content.getBodyPart(i);
+            if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
+                note = loadNoteFromMessage(bodyPart, notebook);
+            } else {
+                createAttachmentContent(bodyPart, attachmentContents);
+            }
+        }
+
+        fillAttachmentOfNote(note, attachmentContents);
+    }
+    
+    private void fillAttachmentOfNote(Note note, Map<String, byte[]> attachmentContents) {
+        if (note != null) {
+            for (Map.Entry<String, byte[]> attContent : attachmentContents.entrySet()) {
+                Attachment attachment = note.getAttachment(attContent.getKey());
+                
+                if (attachment != null) {
+                    attachment.setData(attContent.getValue());
+                }
+            }
+        }
+    }
+
+    private void createAttachmentContent(BodyPart bodyPart, Map<String, byte[]> attachmentContents) throws MessagingException, IOException {
+        String[] header = bodyPart.getHeader("Content-ID");
+        String attId;
+        if (header == null || header.length == 0) {
+            attId = bodyPart.getFileName();
+        } else {
+            attId = header[0];
+        }
+
+        byte[] buffer = new byte[1024];
+        InputStream inputStream = bodyPart.getInputStream();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        int bytes;
+        while ((bytes = inputStream.read(buffer)) != -1) {
+            output.write(buffer, 0, bytes);
+        }
+
+        attachmentContents.put(attId, output.toByteArray());
+        inputStream.close();
+        output.close();
+    }
+
+    private Note loadNoteFromMessage(BodyPart bodyPart, Notebook notebook) throws IOException, MessagingException {
+        InputStream inputStream = bodyPart.getInputStream();
+        Note note = (Note) parser.parse(inputStream);
+        inputStream.close();
+        notebook.addNote(note);
+        addNote(note.getIdentification().getUid(), note);
+
+        Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
+        for (RemoteTags.TagDetails tag : tagsFromNote) {
+            note.addCategories(tag.getTag());
+        }
+        return note;
     }
 }
