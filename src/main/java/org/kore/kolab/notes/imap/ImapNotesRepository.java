@@ -33,7 +33,6 @@ import korex.mail.NoSuchProviderException;
 import korex.mail.Session;
 import korex.mail.Store;
 import korex.mail.internet.InternetAddress;
-import korex.mail.internet.InternetHeaders;
 import korex.mail.internet.MimeBodyPart;
 import korex.mail.internet.MimeMessage;
 import korex.mail.internet.MimeMultipart;
@@ -316,7 +315,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                                         "application/x-vnd.kolab.note");
                                 
                                 addAttachments(message, note.getAttachments());
-                                
+
                                 messagesToAdd.add(message);
 
                                 String uid = note.getIdentification().getUid();
@@ -376,13 +375,15 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         if (content instanceof Multipart) {
             Multipart multipart = (Multipart) content;
             for (Attachment attachment : attachments) {
-                InternetHeaders headers = new InternetHeaders();
-                headers.addHeader("Content-ID", attachment.getId());
-                headers.addHeader("Content-Type", attachment.getMimeType());
-                headers.addHeader("Content-Transfer-Encoding", "base64");
-                headers.addHeader("Content-Disposition", attachment.getFileName());
-                MimeBodyPart part = new MimeBodyPart(headers, attachment.getData());
-                multipart.addBodyPart(part);
+                MimeBodyPart newContent = new MimeBodyPart();
+                newContent.setFileName(attachment.getFileName());
+                KolabByteArrayDataSource dataSource = new KolabByteArrayDataSource(attachment);
+                DataHandler handler = new DataHandler(dataSource);
+                newContent.setDataHandler(handler);
+                newContent.addHeader("Content-Disposition", attachment.getFileName());
+                newContent.addHeader("Content-ID", attachment.getId());
+                newContent.addHeader("Content-Transfer-Encoding", "base64");
+                multipart.addBodyPart(newContent, 1);
             }
         }
     }

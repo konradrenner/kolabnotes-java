@@ -16,8 +16,6 @@
  */
 package org.kore.kolab.notes.imap;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
@@ -31,7 +29,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.kore.kolab.notes.AccountInformation;
-import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Identification;
 import org.kore.kolab.notes.Note;
@@ -200,24 +197,39 @@ public class ImapRepositoryTest {
                 }
             }
 
-            Note attachmentNote = imapRepository.getNote("b4dce9d1-2a91-4240-a9bd-38348392f840");
+            //Note attachmentNote = imapRepository.getNote("4440d6b1-5cb9-4e46-91ae-63f9c4ca160a");
+            //System.out.println("attachmentNote:" + attachmentNote);
+//            Note attachmentNote = imapRepository.getNotebookBySummary("Mit alles").createNote(UUID.randomUUID().toString(), "Attachment note");
+//            File file = new File("/tmp/anhang.png");
+//            file.createNewFile();
+//
+//            FileOutputStream fileOut = new FileOutputStream(file);
+//            ByteArrayInputStream input = new ByteArrayInputStream(attachmentNote.getAttachments().iterator().next().getData());
+//
+//            int length = 1024;
+//            byte[] bytes = new byte[length];
+//            while ((length = input.read(bytes)) != -1) {
+//                fileOut.write(bytes, 0, length);
+//            }
+//            input.close();
+//            fileOut.close();
 
-            byte[] buffer = new byte[1024];
-            InputStream inputStream = getClass().getResourceAsStream("tux-jedi-starwars.png");
-
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            int bytes;
-            while ((bytes = inputStream.read(buffer)) != -1) {
-                output.write(buffer, 0, bytes);
-            }
-            
-            Attachment att = new Attachment("Testfile", "image/png");
-            att.setData(output.toByteArray());
-            
-            inputStream.close();
-            output.close();
-            
-            attachmentNote.addAttachments(att);
+//            byte[] buffer = new byte[1024];
+//            InputStream inputStream = getClass().getResourceAsStream("tux-jedi-starwars.png");
+//
+//            ByteArrayOutputStream output = new ByteArrayOutputStream();
+//            int bytes;
+//            while ((bytes = inputStream.read(buffer)) != -1) {
+//                output.write(buffer, 0, bytes);
+//            }
+//
+//            Attachment att = new Attachment("Testfile", "image/png");
+//            att.setData(output.toByteArray());
+//
+//            inputStream.close();
+//            output.close();
+//
+//            attachmentNote.addAttachments(att);
 
             //Notebook nb = imapRepository.getNotebookBySummary("Shared Folders/shared/test_notes");
             

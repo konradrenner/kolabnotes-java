@@ -96,9 +96,16 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
         }
     }
 
+    public void removeAttachments(String... attId) {
+        for (String att : attId) {
+            firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "attachments", att, null);
+            this.attachments.remove(att);
+        }
+    }
+
     public void removeAttachments(Attachment... atts) {
         for (Attachment att : atts) {
-            firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "attachments", att, null);
+            firePropertyChange(getIdentification().getUid(), EventListener.Type.DELETE, "attachments", att.getId(), null);
             this.attachments.remove(att.getId());
         }
     }
@@ -191,21 +198,9 @@ public class Note extends AbstractEventSupport implements Serializable, Comparab
 
     @Override
     public String toString() {
-        return "Note [identification=" + identification
-                + ", auditInformation="
-                + auditInformation
-                + ", categories="
-                + categories
-                + ", classification="
-                + classification
-                + ", summary="
-                + summary
-                + ", description="
-                + description
-                + ", color="
-                + color
-                + "]";
+        return "Note{" + "identification=" + identification + ", auditInformation=" + auditInformation + ", categories=" + categories + ", classification=" + classification + ", summary=" + summary + ", description=" + description + ", color=" + color + ", attachments=" + attachments + '}';
     }
+
 
 
     public static enum Classification {
