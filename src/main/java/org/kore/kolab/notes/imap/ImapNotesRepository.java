@@ -365,6 +365,8 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             unloaded.addCategories(note.getCategories().toArray(new Tag[note.getCategories().size()]));
             unloaded.getAuditInformation().setLastModificationDate(note.getAuditInformation().getLastModificationDate().getTime());
             unloaded.getAuditInformation().setCreationDate(note.getAuditInformation().getCreationDate().getTime());
+            Collection<Attachment> attachments = note.getAttachments();
+            unloaded.addAttachments(attachments.toArray(new Attachment[attachments.size()]));
         }
 
         enableChangeListening();
