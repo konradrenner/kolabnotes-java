@@ -100,13 +100,18 @@ public final class KolabNotesXMLBuilder {
             builder.append("<attachment>");
             builder.append("<parameters>");
             builder.append("<fmttype>");
+            builder.append("<text>");
             builder.append(attachment.getMimeType());
+            builder.append("</text>");
             builder.append("</fmttype>");
             builder.append("<x-label>");
+            builder.append("<text>");
             builder.append(attachment.getFileName());
+            builder.append("</text>");
             builder.append("</x-label>");
             builder.append("</parameters>");
             builder.append("<uri>");
+            builder.append("cid:");
             builder.append(attachment.getId());
             builder.append("</uri>");
             builder.append("</attachment>");

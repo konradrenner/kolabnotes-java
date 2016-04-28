@@ -95,11 +95,11 @@ public class KolabNotesHandler
             } else if ("color".contains(name)) {
                 color = Colors.getColor(value);
             } else if ("fmttype".contains(name)) {
-                fmttype = value;
+                fmttype = value.trim();
             } else if ("uri".contains(name)) {
                 uri = value.substring(value.indexOf(":") + 1);
             } else if ("x-label".contains(name)) {
-                xlabel = value;
+                xlabel = value.trim();
             }
         }
 

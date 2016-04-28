@@ -58,7 +58,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     final static String KOLAB_TEXT = "This is a Kolab Groupware object.\n"
             + "To view this object you will need a Kolab Groupware Client.\n"
             + "For a list of Kolab Groupware Clients please visit:\n"
-            + "http://www.kolab.org/get-kolab";
+            + "http://www.kolab.org";
 
     private final AccountInformation account;
     private final KolabParser configurationParser;
