@@ -15,12 +15,8 @@
   
   <attachment>
       <parameters>
-          <fmttype>
-              <text>image/png</text>
-          </fmttype>
-          <x-label>
-              <text>akonadi.png</text>
-          </x-label>
+          <fmttype>image/png</fmttype>
+          <x-label>akonadi.png</x-label>
       </parameters>
       <uri>cid:attachment</uri>
   </attachment>
