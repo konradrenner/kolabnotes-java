@@ -49,7 +49,7 @@ public class ImapRepositoryTest {
 
     @Before
     public void setUp() {
-        AccountInformation info = AccountInformation.createForHost("imap.kolabnow.com").username("konrad.renner@kolabnow.com").password("ko1601re.ko").enableSharedFolders().build();
+        AccountInformation info = AccountInformation.createForHost("imap.kolab.com").username("").password("").enableSharedFolders().build();
         imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Testbuch", new KolabConfigurationParserV3());
 
         createTestdata();
