@@ -127,7 +127,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 //folder.close(false);
             }
             
-            initSharedFolders(store, fetchProfile, modificationDate, account.isFolderAnnotationEnabled(), listener);
+            initSharedFolders(store, fetchProfile, modificationDate, account.isFolderAnnotationEnabled(), account.isSharedFoldersEnabled(), listener);
 
             //rFolder.close(false);
             store.close();
@@ -172,7 +172,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         if (info.isFolderAnnotationEnabled()) {
             Map<String, String> clientParams = new HashMap<String, String>();
             clientParams.put("name", "/Kolabnotes-java");
-            clientParams.put("version", "2.0.2");
+            clientParams.put("version", "3.3.4");
             clientParams.put("os", System.getProperty("os.name"));
             clientParams.put("support-url", "https://github.com/konradrenner/kolabnotes-java/issues");
             clientParams.put("os-version", System.getProperty("os.version"));
@@ -185,15 +185,16 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         return store;
     }
     
-    void initSharedFolders(Store store, FetchProfile fetchProfile, Date modificationDate, boolean folderAnnotationEnabled, Listener... listener) throws MessagingException, IOException{
-        if(!folderAnnotationEnabled){
+    void initSharedFolders(Store store, FetchProfile fetchProfile, Date modificationDate, boolean folderAnnotationEnabled, boolean sharedFolderEnabled, Listener... listener) throws MessagingException, IOException {
+        if (!folderAnnotationEnabled || !sharedFolderEnabled) {
             //Just Kolab servers are enabled for this feature
             return;
         }
         
         Folder defaultFolder = store.getDefaultFolder();
+        Folder[] list = defaultFolder.list("*");
         
-        for(Folder folder : defaultFolder.list("*")){
+        for (Folder folder : list) {
             if (folder instanceof IMAPFolder) {
                 IMAPFolder imapFolder = (IMAPFolder) folder;
                 GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());

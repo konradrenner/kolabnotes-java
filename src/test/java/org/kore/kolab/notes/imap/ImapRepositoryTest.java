@@ -49,8 +49,8 @@ public class ImapRepositoryTest {
 
     @Before
     public void setUp() {
-        AccountInformation info = AccountInformation.createForHost("imap.kolab.com").username("").password("").enableSharedFolders().build();
-        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Testbuch", new KolabConfigurationParserV3());
+        AccountInformation info = AccountInformation.createForHost("kolabserver").username("").password("").build();
+        imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
 
         createTestdata();
     }
@@ -254,7 +254,7 @@ public class ImapRepositoryTest {
             //        createNote.setClassification(Note.Classification.PRIVATE);
             //        createNote.setDescription("the description");
             //        createNote.addCategories("Linux");
-            imapRepository.merge();
+            //imapRepository.merge();
         } catch (Exception e) {
             e.printStackTrace();
             if (e.getCause() != null) {
