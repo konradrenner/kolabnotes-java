@@ -13,6 +13,8 @@ import static java.util.Calendar.YEAR;
 import java.util.Collection;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.kore.kolab.notes.Attachment;
 import org.kore.kolab.notes.AuditInformation;
 import org.kore.kolab.notes.Color;
@@ -24,6 +26,10 @@ import org.kore.kolab.notes.Note;
  * 
  */
 public final class KolabNotesXMLBuilder {
+
+    private static final Pattern PATTERN_HTML_START = Pattern.compile("(<|&lt;)html(>|&gt;)");
+    private static final Pattern PATTERN_BODY_START = Pattern.compile("(<|&lt;)body(>|&gt;)");
+    private static final Pattern PATTERN_BODY_END = Pattern.compile("(</|&lt;/)body(>|&gt;)");
 
     private final StringBuilder builder;
 
@@ -119,7 +125,21 @@ public final class KolabNotesXMLBuilder {
         if (desc != null) {
             builder.append("<description>");
 
-            String correct = desc.replaceAll(">", "&gt;").replaceAll("<", "&lt;").replaceAll("&nbsp;", " ");
+            String correct = desc;
+            Matcher html = PATTERN_HTML_START.matcher(correct);
+            if (html.find()) {
+                Matcher start = PATTERN_BODY_START.matcher(correct);
+                if (start.find()) {
+                    Matcher ende = PATTERN_BODY_END.matcher(correct);
+                    //must be found, otherwise the description would be not correct
+                    ende.find(start.end());
+                    correct = replaceHtmlCharacters(correct, start.end(), ende.end() + 1);
+                }
+            } else {
+                correct = replaceHtmlCharacters(correct, 0, correct.length());
+            }
+
+            correct = correct.replaceAll(">", "&gt;").replaceAll("<", "&lt;").replaceAll("&nbsp;", " ");
 
             builder.append(correct);
             builder.append("</description>");
@@ -127,6 +147,15 @@ public final class KolabNotesXMLBuilder {
             builder.append("<description/>");
         }
         return this;
+    }
+
+    private String replaceHtmlCharacters(String correct, int start, int ende) {
+        //there must be an html end tag after body, so no check if length would be greater than length of correct
+        String newBody = correct.substring(start, ende);
+        newBody = newBody.replaceAll("&nbsp;", " ").replaceAll("&(?!amp;)", "&amp;");
+        StringBuilder sb = new StringBuilder(correct);
+        correct = sb.replace(start, ende, newBody).toString();
+        return correct;
     }
 
     public KolabNotesXMLBuilder withColor(Color color) {

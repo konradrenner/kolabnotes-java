@@ -43,6 +43,22 @@ public class KolabNotesParserV3Test {
     }
 
     @Test
+    public void testParseNoteWithHtmlCharacters() {
+        InputStream inputStream = getClass().getResourceAsStream("kolab_special_html_characters.xml");
+        Note note = parser.parse(inputStream);
+
+        assertEquals(Note.Classification.CONFIDENTIAL, note.getClassification());
+        assertEquals("Summary", note.getSummary());
+        //assertTrue(note.getDescription().startsWith("k & is this < or is this > we need blanks and \" or ' all must work"));
+        assertNotNull(note.getAuditInformation().getCreationDate());
+        assertNotNull(note.getAuditInformation().getLastModificationDate());
+        assertNotNull(note.getIdentification().getUid());
+        assertTrue(Colors.BLACK.equals(note.getColor()));
+        assertEquals("kolabnotes-provider", note.getIdentification().getProductId());
+        System.out.println(note);
+    }
+
+    @Test
     public void testParseNoteWithAttachment() {
         InputStream inputStream = getClass().getResourceAsStream("kolab_test_attachment.xml");
         Note note = parser.parse(inputStream);
@@ -115,6 +131,46 @@ public class KolabNotesParserV3Test {
         reader.close();
 
         note.setDescription(sb.toString());
+
+        parser.write(note, System.out);
+    }
+
+    @Test
+    public void testWriteNoteWithInlineImageAndSpecialCharacters() throws Exception {
+        Identification identification = new Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
+        AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
+                new Timestamp(System.currentTimeMillis()));
+
+        Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
+        note.addCategories(Tag.createNewTag("Hallo"), Tag.createNewTag("Servus"));
+        note.setColor(Colors.BLACK);
+
+        InputStream inputStream = getClass().getResourceAsStream("testdescription_with_specials.txt");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        StringBuilder sb = new StringBuilder();
+
+        String s;
+        while ((s = reader.readLine()) != null) {
+            sb.append(s);
+        }
+
+        reader.close();
+
+        note.setDescription(sb.toString());
+
+        parser.write(note, System.out);
+    }
+
+    @Test
+    public void testWriteNoteWithSpecialCharacters() throws Exception {
+        Identification identification = new Identification("599d595c-a715-4a6f-821b-c368e4cb70c2", "kolabnotes-provider");
+        AuditInformation audit = new AuditInformation(new Timestamp(System.currentTimeMillis()),
+                new Timestamp(System.currentTimeMillis()));
+
+        Note note = new Note(identification, audit, Note.Classification.CONFIDENTIAL, "Summary");
+        note.addCategories(Tag.createNewTag("Hallo"), Tag.createNewTag("Servus"));
+        note.setColor(Colors.BLACK);
+        note.setDescription("lesser < greater > hi & and \"  and ` ' ^ °  # '  ~ i hope&nbsp;thats all § $ % / () ? | nothing more");
 
         parser.write(note, System.out);
     }

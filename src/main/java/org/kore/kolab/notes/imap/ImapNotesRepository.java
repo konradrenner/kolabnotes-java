@@ -64,11 +64,13 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     private final KolabParser configurationParser;
     private RemoteTags remoteTags;
     private Base64Coder coder;
+    private final Map<String, Message> messageCache;
 
     public ImapNotesRepository(KolabParser parser, AccountInformation account, String rootFolder, KolabParser configurationParser) {
         super(parser, rootFolder);
         this.account = account;
         this.configurationParser = configurationParser;
+        this.messageCache = new HashMap<String, Message>();
     }
 
     @Override
@@ -95,6 +97,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     public void refresh(Date modificationDate, Listener... listener) {
         notesCache.clear();
         notebookCache.clear();
+        messageCache.clear();
         try {
             Store store = openConnection(account);
 
@@ -353,12 +356,19 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
     }
 
     @Override
-    public void fillUnloadedNote(Note note) {
+    public void fillUnloadedNote(final Note n) {
         disableChangeListening();
 
+        Note note = n;
         Note unloaded = notesCache.get(note.getIdentification().getUid());
 
         if (unloaded != null && NOT_LOADED.equals(unloaded.getSummary())) {
+
+            //Maybe the not is not stored correct in the client app
+            if (NOT_LOADED.equals(note.getSummary())) {
+                note = parseNoteFromMessage(note.getIdentification().getUid());
+            }
+
             unloaded.setClassification(note.getClassification());
             unloaded.setColor(note.getColor());
             unloaded.setDescription(note.getDescription());
@@ -519,6 +529,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             addNotebook(notebook.getIdentification().getUid(), notebook);
 
             for (Message m : messages) {
+                messageCache.put(m.getSubject(), m);
                 Date sentDate = m.getSentDate();
                 if (parseDate != null && parseDate.after(sentDate)) {
                     Timestamp tst = new Timestamp(sentDate.getTime());
@@ -559,7 +570,45 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
 
         fillAttachmentOfNote(note, attachmentContents);
     }
-    
+
+    private Note parseNoteFromMessage(String noteUID) {
+        Note note = null;
+        Message message = messageCache.get(noteUID);
+        if (message == null) {
+            return null;
+        }
+        try {
+            Folder folder = message.getFolder();
+            
+            if (!folder.isOpen()) {
+                folder.open(READ_ONLY);
+            }
+            
+            Map<String, byte[]> attachmentContents = new LinkedHashMap<String, byte[]>();
+            Multipart content = (Multipart) message.getContent();
+            for (int i = 0; i < content.getCount(); i++) {
+                BodyPart bodyPart = content.getBodyPart(i);
+                if (bodyPart.getContentType().startsWith("APPLICATION/VND.KOLAB+XML")) {
+                    InputStream inputStream = bodyPart.getInputStream();
+                    note = (Note) parser.parse(inputStream);
+                    inputStream.close();
+
+                    Set<RemoteTags.TagDetails> tagsFromNote = this.remoteTags.getTagsFromNote(note.getIdentification().getUid());
+                    for (RemoteTags.TagDetails tag : tagsFromNote) {
+                        note.addCategories(tag.getTag());
+                    }
+                } else {
+                    createAttachmentContent(bodyPart, attachmentContents);
+                }
+            }
+
+            fillAttachmentOfNote(note, attachmentContents);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return note;
+    }
+
     private void fillAttachmentOfNote(Note note, Map<String, byte[]> attachmentContents) {
         if (note != null) {
             for (Map.Entry<String, byte[]> attContent : attachmentContents.entrySet()) {
