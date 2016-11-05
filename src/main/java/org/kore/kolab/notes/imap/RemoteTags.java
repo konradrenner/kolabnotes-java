@@ -55,15 +55,17 @@ public class RemoteTags {
     private final Map<String, Set<TagDetails>> tagsPerNote;
     private final Map<String, TagDetails> tagPerTagname;
     private final KolabParser parser;
+    private final String rootFolder;
     
     private final Set<String> tagsForDeletion;
 
-    public RemoteTags(KolabParser parser, AccountInformation login) {
+    public RemoteTags(KolabParser parser, AccountInformation login, String rootFolder) {
         this.account = login;
         this.tagsPerNote = new HashMap<String, Set<TagDetails>>();
         this.tagPerTagname = new HashMap<String, TagDetails>();
         this.parser = parser;
         this.tagsForDeletion = new HashSet<String>();
+        this.rootFolder = rootFolder;
     }
 
     /**
@@ -250,7 +252,14 @@ public class RemoteTags {
             Folder configFolder = searchConfigFolder(rFolder);
 
             if (configFolder == null) {
-                configFolder = rFolder.getFolder("Configuration");
+
+                String configFolderName = "Configuration";
+                //Because of GitHub issue 142
+                if (!account.isFolderAnnotationEnabled() && rootFolder.startsWith("INBOX.")) {
+                    configFolderName = "INBOX." + configFolderName;
+                }
+
+                configFolder = rFolder.getFolder(configFolderName);
                 configFolder.create(Folder.HOLDS_MESSAGES);
 
                 if (account.isFolderAnnotationEnabled()) {
@@ -363,7 +372,12 @@ public class RemoteTags {
             ((IMAPFolder) folder).doCommand(metadataCommand);
             return metadataCommand.isConfigurationFolder();
         } else {
-            return "Configuration".equalsIgnoreCase(folder.getName());
+            String configFolderName = "Configuration";
+            //Because of GitHub issue 142
+            if (rootFolder.startsWith("INBOX.")) {
+                configFolderName = "INBOX." + configFolderName;
+            }
+            return configFolderName.equalsIgnoreCase(folder.getName());
         }
     }
 

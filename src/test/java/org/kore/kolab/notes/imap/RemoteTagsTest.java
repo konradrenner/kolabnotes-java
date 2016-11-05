@@ -35,7 +35,7 @@ public class RemoteTagsTest {
     @Before
     public void setUp() {
         AccountInformation info = AccountInformation.createForHost("imap.kolabserver.com").username("").password("").build();
-        remoteTags = new RemoteTags(new KolabConfigurationParserV3(), info);
+        remoteTags = new RemoteTags(new KolabConfigurationParserV3(), info, "Notes");
     }
 
     @Ignore

@@ -101,7 +101,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         try {
             Store store = openConnection(account);
 
-            remoteTags = new RemoteTags(configurationParser, account);
+            remoteTags = new RemoteTags(configurationParser, account, rootfolder);
             remoteTags.init(store);
 
             Folder rFolder = store.getFolder(rootfolder);
@@ -235,7 +235,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             Store store = openConnection(account);
             
             if (remoteTags == null) {
-                remoteTags = new RemoteTags(configurationParser, account);
+                remoteTags = new RemoteTags(configurationParser, account, rootfolder);
             }
             remoteTags.init(store);
 
