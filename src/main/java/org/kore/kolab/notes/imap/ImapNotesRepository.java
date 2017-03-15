@@ -195,8 +195,14 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
         }
         
         Folder defaultFolder = store.getDefaultFolder();
-        Folder[] list = defaultFolder.list("*");
-        
+        Folder[] others = defaultFolder.list("Other Users*");
+        Folder[] shares = defaultFolder.list("Shared Folders*");
+        Folder[] list = new Folder[others.length + shares.length];
+        if (list.length > 0) {
+            System.arraycopy(others, 0, list, 0, others.length);
+            System.arraycopy(shares, 0, list, others.length - 1, shares.length);
+        }
+
         for (Folder folder : list) {
             if (folder instanceof IMAPFolder) {
                 IMAPFolder imapFolder = (IMAPFolder) folder;
