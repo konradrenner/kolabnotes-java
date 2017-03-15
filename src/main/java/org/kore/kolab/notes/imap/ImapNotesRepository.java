@@ -19,6 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import korex.activation.DataHandler;
 import korex.mail.BodyPart;
 import korex.mail.FetchProfile;
@@ -139,10 +141,41 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             deletedNotebookCache.clear();
             deletedNotesCache.clear();
         } catch (Exception e) {
-            System.out.println(e);
             throw new IllegalStateException(e);
         }
     }
+
+    @Override
+    public SortedSet<String> getAllPossibleRootFolders() {
+        try {
+            Store store = openConnection(account);
+            Folder defaultFolder = store.getDefaultFolder();
+            Folder[] list = defaultFolder.list("%");
+
+            SortedSet<String> ret = new TreeSet<String>();
+            for (Folder folder : list) {
+                boolean isNotesFolder = true;
+                if (account.isFolderAnnotationEnabled()) {
+                    if (folder instanceof IMAPFolder) {
+                        GetMetadataCommand metadataCommand = new GetMetadataCommand(folder.getFullName());
+                        ((IMAPFolder) folder).doCommand(metadataCommand);
+
+                        //Just handle folders which contain notes
+                        isNotesFolder = metadataCommand.isNotesFolder();
+                    }
+                }
+
+                if (isNotesFolder) {
+                    ret.add(folder.getName());
+                }
+            }
+
+            return ret;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
 
     public static Store openConnection(AccountInformation info) throws MessagingException, NoSuchProviderException {
         Properties props = new Properties();
@@ -193,41 +226,47 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
             //Just Kolab servers are enabled for this feature
             return;
         }
-        
-        Folder defaultFolder = store.getDefaultFolder();
-        Folder[] others = defaultFolder.list("Other Users*");
-        Folder[] shares = defaultFolder.list("Shared Folders*");
-        Folder[] list = new Folder[others.length + shares.length];
-        if (list.length > 0) {
-            System.arraycopy(others, 0, list, 0, others.length);
-            System.arraycopy(shares, 0, list, others.length - 1, shares.length);
-        }
 
-        for (Folder folder : list) {
-            if (folder instanceof IMAPFolder) {
-                IMAPFolder imapFolder = (IMAPFolder) folder;
-                GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());
-                imapFolder.doCommand(metadataCommand);
+        try {
+            Folder defaultFolder = store.getDefaultFolder();
+            Folder[] others = defaultFolder.list("Other Users*");
+            Folder[] shares = defaultFolder.list("Shared Folders*");
+            Folder[] list = new Folder[others.length + shares.length];
+            if (list.length > 0) {
+                System.arraycopy(others, 0, list, 0, others.length);
+                System.arraycopy(shares, 0, list, others.length, shares.length);
+            }
 
-                //Just handle folders which contain notes
-                if (metadataCommand.isSharedNotesFolder()) {
+            for (Folder folder : list) {
+                if (folder instanceof IMAPFolder) {
+                    IMAPFolder imapFolder = (IMAPFolder) folder;
+                    GetSharedFolderCommand metadataCommand = new GetSharedFolderCommand(folder.getFullName());
+                    imapFolder.doCommand(metadataCommand);
 
-                    GetFolderPermissionsCommand permissionsCommand = new GetFolderPermissionsCommand(folder.getFullName());
-                    imapFolder.doCommand(permissionsCommand);
+                    //Just handle folders which contain notes
+                    if (metadataCommand.isSharedNotesFolder()) {
 
-                    folder.open(READ_ONLY);
-                    Notebook book = initNotesFromFolder(folder, fetchProfile, modificationDate, true);
-                    
-                    if (book != null) {
-                        SharedNotebook shared = (SharedNotebook) book;
-                        shared.setNoteCreationAllowed(permissionsCommand.isIsNoteCreationAllowed());
-                        shared.setNoteModificationAllowed(permissionsCommand.isIsNoteModificationAllowed());
-                    }
-                    
-                    for (Listener listen : listener) {
-                        listen.onSyncUpdate(folder.getFullName());
+                        GetFolderPermissionsCommand permissionsCommand = new GetFolderPermissionsCommand(folder.getFullName());
+                        imapFolder.doCommand(permissionsCommand);
+
+                        folder.open(READ_ONLY);
+                        Notebook book = initNotesFromFolder(folder, fetchProfile, modificationDate, true);
+
+                        if (book != null) {
+                            SharedNotebook shared = (SharedNotebook) book;
+                            shared.setNoteCreationAllowed(permissionsCommand.isIsNoteCreationAllowed());
+                            shared.setNoteModificationAllowed(permissionsCommand.isIsNoteModificationAllowed());
+                        }
+
+                        for (Listener listen : listener) {
+                            listen.onSyncUpdate(folder.getFullName());
+                        }
                     }
                 }
+            }
+        } catch (Exception e) {
+            for (Listener listen : listener) {
+                listen.onFolderSyncException("Shared Folders sync", e);
             }
         }
     }

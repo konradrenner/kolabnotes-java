@@ -18,6 +18,7 @@ package org.kore.kolab.notes;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.SortedSet;
 import org.kore.kolab.notes.event.EventListener;
 
 /**
@@ -83,6 +84,14 @@ public interface RemoteNotesRepository extends NotesRepository {
     boolean noteCompletelyLoaded(Note note);
 
     void setBase64Coder(Base64Coder coder);
+
+    /**
+     * Returns an array of possible root folders
+     *
+     * @throws IllegalStateException - if an error occurs
+     * @return SortedSet - Sorted Set of possible root folders
+     */
+    SortedSet<String> getAllPossibleRootFolders();
 
     interface Base64Coder {
 

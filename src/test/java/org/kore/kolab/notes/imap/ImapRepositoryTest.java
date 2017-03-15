@@ -19,6 +19,7 @@ package org.kore.kolab.notes.imap;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.SortedSet;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,7 +50,7 @@ public class ImapRepositoryTest {
 
     @Before
     public void setUp() {
-        AccountInformation info = AccountInformation.createForHost("kolabserver").username("").password("").build();
+        AccountInformation info = AccountInformation.createForHost("kolabserver").username("").password("").enableSharedFolders().build();
         imapRepository = new ImapNotesRepository(new KolabNotesParserV3(), info, "Notes", new KolabConfigurationParserV3());
 
         createTestdata();
@@ -175,6 +176,13 @@ public class ImapRepositoryTest {
 
         filled.setSummary("HAHAHA");
         assertEquals(EventListener.Type.UPDATE, imapRepository.getEvent(ident.getUid()));
+    }
+
+    @Ignore
+    @Test
+    public void testGetRootFolders() {
+        SortedSet<String> allPossibleRootFolders = imapRepository.getAllPossibleRootFolders();
+        System.out.println(allPossibleRootFolders);
     }
 
     @Ignore
