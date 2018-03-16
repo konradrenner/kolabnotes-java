@@ -196,6 +196,7 @@ public class ImapNotesRepository extends LocalNotesRepository implements RemoteN
                 props.put("mail.imap.ssl.trust", "*");
                 //try to use starttls
                 props.put("mail.imap.starttls.enable", "true");
+                props.put("mail.imap.ssl.protocols", "TLSv1 TLSv1.1 TLSv1.2");
 
                 Session session = Session.getInstance(props, null);
                 store = (IMAPStore) session.getStore("imap");
